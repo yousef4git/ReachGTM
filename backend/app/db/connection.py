@@ -20,6 +20,7 @@ async def close_pool() -> None:
 
 async def get_db(request: Request):
     """FastAPI dependency — yields an asyncpg connection from the pool."""
+    assert _pool is not None, "Database pool not initialized — call init_pool() first"
     async with _pool.acquire() as conn:
         company_id = getattr(request.state, "company_id", None)
         if company_id:

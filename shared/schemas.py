@@ -1,6 +1,6 @@
 from __future__ import annotations
 from enum import Enum
-from typing import Annotated, Any, Optional
+from typing import Any, Optional
 from datetime import datetime
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
