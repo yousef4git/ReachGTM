@@ -1,0 +1,10 @@
+# Global fallback
+*                           @yousef4git
+
+# Service ownership
+/agents/                    @yousef4git
+/backend/                   @nawaf
+/frontend/                  @bader
+/shared/                    @yousef4git @nawaf @bader @abdulrahem
+/infra/                     @yousef4git
+/docs/                      @yousef4git

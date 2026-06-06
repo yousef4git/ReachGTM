@@ -1,0 +1,51 @@
+services:
+  backend:
+    image: ${ECR_REGISTRY}/reachgtm-backend:${IMAGE_TAG}
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /ecs/reachgtm-backend
+        awslogs-region: us-east-1
+        awslogs-stream-prefix: ecs
+
+  agents:
+    image: ${ECR_REGISTRY}/reachgtm-agents:${IMAGE_TAG}
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /ecs/reachgtm-agents
+        awslogs-region: us-east-1
+        awslogs-stream-prefix: ecs
+
+  frontend:
+    image: ${ECR_REGISTRY}/reachgtm-frontend:${IMAGE_TAG}
+    volumes: []
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.25"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /ecs/reachgtm-frontend
+        awslogs-region: us-east-1
+        awslogs-stream-prefix: ecs
+
+  db:
+    ports: []
+
+  redis:
+    ports: []
