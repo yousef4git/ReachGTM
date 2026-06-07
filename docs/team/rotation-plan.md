@@ -37,9 +37,9 @@ Epic file: [`docs/epics/epic-5-bootcamp-phase1-graph-skeleton.md`](../epics/epic
 | Person | Previous lane | Agent node | Non-agent layer | What they learn |
 |--------|-------------|-----------|-----------------|----------------|
 | **Nawaf** | Backend-only | Orchestrator (#9) + Content node (#12) | Content UI (#18) | LangGraph, LLM prompts, frontend |
-| **Bader** | Frontend-only | Strategy node (#11) | Backend SSE (#14) | LangGraph agents, FastAPI streaming |
+| **Bader** | Frontend-only | Strategy node (#11) | Backend SSE (#14) + Strategy UI (#17) | LangGraph agents, FastAPI streaming, frontend |
 | **Abdulrahem** | ML/RAG | Research node (#10) + ColdIQ tools (#16) | — | LangChain tool wrappers |
-| **Yousef** | Everything | Brand alignment (#13) + pm-skills (#15) | Strategy UI (#17) | pgvector RAG, frontend (delegates) |
+| **Yousef** | Everything | Brand alignment (#13) + pm-skills (#15) | — | pgvector RAG (delegates) |
 
 **Swap rule:** After each PR is merged, rotate who reviews.
 - Nawaf's PRs → Bader reviews
@@ -85,14 +85,13 @@ Open PR → tag assigned reviewer (see rotation above)
 Merge → next person pulls staging and starts theirs
 ```
 
-## Total PRs Per Person
+## Total PRs Per Person (non-shared)
 
-| Person | Phase 1 | Phase 2 | Phase 3 | Total |
-|--------|---------|---------|---------|-------|
-| **Nawaf** | shared | 3 PRs (#9, #12, #18) | 1 PR (#23) | 4 PRs |
-| **Bader** | shared | 2 PRs (#11, #14) | 1 PR (#20) | 3 PRs |
-| **Abdulrahem** | shared | 2 PRs (#10, #16) | 2 PRs (#19, #24) | 4 PRs |
-| **Yousef** | shared | 3 PRs (#13, #15, #17) | 2 PRs (#21, #22) | 5 PRs |
-| **All 4 paired** | 1 PR (#0) | — | 1 PR (#25) | 2 PRs paired |
+| Person | Phase 2 | Phase 3 | Total |
+|--------|---------|---------|-------|
+| **Nawaf** | 3 (#9, #12, #18) | 1 (#23) | **4** |
+| **Bader** | 3 (#11, #14, #17) | 1 (#20) | **4** |
+| **Abdulrahem** | 2 (#10, #16) | 2 (#19, #24) | **4** |
+| **Yousef** | 2 (#13, #15) | 2 (#21, #22) | **4** |
 
-Within 1 PR of each other. Balanced.
+Plus PR #0 (Phase 1) and PR #25 (Phase 3) are shared — everyone paired.

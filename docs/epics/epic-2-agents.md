@@ -11,9 +11,9 @@
 | Person | Before | After rotation | Learns |
 |--------|--------|---------------|--------|
 | **Nawaf** | Backend-only (#14) | Orchestrator + Content node + Content UI | LangGraph, LLM prompts, frontend |
-| **Bader** | Frontend-only (#17, #18) | Strategy node + Backend SSE | LangGraph agents, FastAPI streaming |
+| **Bader** | Frontend-only (#17, #18) | Strategy node + Backend SSE + Strategy UI | LangGraph agents, FastAPI, frontend advanced |
 | **Abdulrahem** | ML/RAG (#10, #13) | Research node + ColdIQ tools | LangChain tool wrappers, keeps MCP strength |
-| **Yousef** | Everything (#9, #11, #12, #15, #16) | Brand alignment + Strategy UI + pm-skills tools | pgvector RAG, frontend (delegates, doesn't own everything) |
+| **Yousef** | Everything (#9, #11, #12, #15, #16) | Brand alignment + pm-skills tools | pgvector RAG (delegates, doesn't own everything) |
 
 ---
 
@@ -29,19 +29,17 @@
 | #14 | Backend SSE endpoint — `/strategy/generate/stream` with EventSource | **Bader** | `epic-5/pr-14-sse` | FastAPI async streaming, SSE protocol |
 | #15 | pm-skills LangChain tool wrappers | **Yousef** | `epic-5/pr-15-pm-skills` | LangChain tool interface, prompt templates |
 | #16 | ColdIQ LangChain tool wrappers | **Abdulrahem** | `epic-5/pr-16-coldiq` | LangChain tool composition, sales prompt frameworks |
-| #17 | Strategy UI page — SSE consumption + AgentProgress | **Yousef** | `epic-5/pr-17-strategy-ui` | Next.js, TanStack Query, SSE in browser |
+| #17 | Strategy UI page — SSE consumption + AgentProgress | **Bader** | `epic-5/pr-17-strategy-ui` | Next.js, TanStack Query, SSE in browser |
 | #18 | Content + Knowledge pages | **Nawaf** | `epic-5/pr-18-content-ui` | Frontend with Zustand, Tailwind CSS |
 
 ## PR Count Per Person
 
 | Person | Agent node | Tools | Backend | Frontend | Total |
 |--------|-----------|-------|---------|----------|-------|
-| **Nawaf** | #9, #12 | — | — | #18 | 3 PRs |
-| **Bader** | #11 | — | #14 | — | 2 PRs |
-| **Abdulrahem** | #10 | #16 | — | — | 2 PRs |
-| **Yousef** | #13 | #15 | — | #17 | 3 PRs |
-
-No one has more than 3 PRs. Everyone learns something outside their original lane.
+| **Nawaf** | #9, #12 | — | — | #18 | **3** |
+| **Bader** | #11 | — | #14 | #17 | **3** |
+| **Abdulrahem** | #10 | #16 | — | — | **2** |
+| **Yousef** | #13 | #15 | — | — | **2** |
 
 ## Review Rotation
 
@@ -63,7 +61,7 @@ graph TD
   C --> D[#12 Content - Nawaf]
   D --> G[#13 Brand - Yousef]
   C --> H[#14 SSE - Bader]
-  H --> I[#17 Strategy UI - Yousef]
+  H --> I[#17 Strategy UI - Bader]
   I --> J[#18 Content UI - Nawaf]
 ```
 
