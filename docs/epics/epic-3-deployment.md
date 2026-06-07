@@ -4,17 +4,6 @@
 
 ---
 
-## Distribution Philosophy
-
-Everyone steps outside their Phase 2 lane:
-
-| Person | Phase 2 role | Epic 3 assignment | Learns |
-|--------|-------------|-------------------|--------|
-| **Nawaf** | Agents + Frontend | CloudFront CDN (#23) + Smoke tests (#25) | CDN, edge caching |
-| **Bader** | Agents + Backend | OIDC + deploy pipeline (#20) | CI/CD, IAM roles |
-| **Abdulrahem** | Agents + MCP tools | ECS cluster (#19) | AWS ECS Fargate, Terraform |
-| **Yousef** | RAG + Frontend | RDS + ElastiCache (#21) + S3 (#22) | Managed DB, storage services |
-
 ---
 
 ## PRs in this Epic

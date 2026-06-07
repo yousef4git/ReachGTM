@@ -6,17 +6,6 @@
 
 ---
 
-## Distribution Philosophy
-
-| Person | Before | After rotation | Learns |
-|--------|--------|---------------|--------|
-| **Nawaf** | Backend-only (#14) | Orchestrator + Content node + Content UI | LangGraph, LLM prompts, frontend |
-| **Bader** | Frontend-only (#17, #18) | Strategy node + Backend SSE + Strategy UI | LangGraph agents, FastAPI, frontend advanced |
-| **Abdulrahem** | ML/RAG (#10, #13) | Research node + ColdIQ tools | LangChain tool wrappers, keeps MCP strength |
-| **Yousef** | Everything (#9, #11, #12, #15, #16) | Brand alignment + pm-skills tools | pgvector RAG (delegates, doesn't own everything) |
-
----
-
 ## PRs in this Epic
 
 | PR | Title | Owner | Branch | What They Learn |
