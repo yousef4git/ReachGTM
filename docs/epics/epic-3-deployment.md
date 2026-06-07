@@ -1,22 +1,42 @@
-# Epic 3 — Production Deployment
+# Epic 3 — Production Deployment (Phase 3: Infra Rotation)
 
-**Goal:** Ship to AWS ECS Fargate. Staging auto-deploys. Production deploys via deploy.yml on merge to main.
+**Goal:** Ship to AWS ECS Fargate. Everyone deploys 1-2 pieces of infrastructure they haven't touched yet.
+
+---
+
+## Distribution Philosophy
+
+Everyone steps outside their Phase 2 lane:
+
+| Person | Phase 2 role | Epic 3 assignment | Learns |
+|--------|-------------|-------------------|--------|
+| **Nawaf** | Agents + Frontend | CloudFront CDN (#23) + Smoke tests (#25) | CDN, edge caching |
+| **Bader** | Agents + Backend | OIDC + deploy pipeline (#20) | CI/CD, IAM roles |
+| **Abdulrahem** | Agents + MCP tools | ECS cluster (#19) | AWS ECS Fargate, Terraform |
+| **Yousef** | RAG + Frontend | RDS + ElastiCache (#21) + S3 (#22) | Managed DB, storage services |
 
 ---
 
 ## PRs in this Epic
 
-| PR | Title | Owner | Branch |
-|---|---|---|---|
-| #19 | AWS infra — ECR repos, ECS cluster, task definitions | Yousef | `epic-3/pr-19-aws-infra` |
-| #20 | GitHub OIDC deploy role + Secrets | Yousef | `epic-3/pr-20-oidc` |
-| #21 | RDS + ElastiCache provisioning | Nawaf | `epic-3/pr-21-rds` |
-| #22 | S3 storage service (document uploads) | Nawaf | `epic-3/pr-22-s3` |
-| #23 | CloudFront CDN for frontend | Bader | `epic-3/pr-23-cdn` |
-| #24 | Databar + Fetch MCP server integration | Abdulrahem | `epic-3/pr-24-mcp-extra` |
-| #25 | Production smoke test suite | All | `epic-3/pr-25-smoke-tests` |
+| PR | Title | Owner | Branch | What They Learn |
+|----|-------|-------|--------|----------------|
+| #19 | AWS infra — ECR repos, ECS cluster, task definitions | **Abdulrahem** | `epic-3/pr-19-aws-infra` | ECS Fargate, container orchestration, Terraform |
+| #20 | GitHub OIDC + deploy pipeline | **Bader** | `epic-3/pr-20-oidc` | IAM OIDC, GitHub Actions secrets, secure deploy |
+| #21 | RDS + ElastiCache provisioning | **Yousef** | `epic-3/pr-21-rds` | PostgreSQL managed, Redis parameter groups |
+| #22 | S3 storage service (document uploads) | **Yousef** | `epic-3/pr-22-s3` | boto3, presigned URLs, bucket policies |
+| #23 | CloudFront CDN for frontend | **Nawaf** | `epic-3/pr-23-cdn` | CDN, origin groups, edge caching |
+| #24 | Databar + Fetch MCP server integration | **Abdulrahem** | `epic-3/pr-24-mcp-extra` | Deepens MCP knowledge |
+| #25 | Production smoke test suite | **All 4 paired** | `epic-3/pr-25-smoke-tests` | Integration testing, CI/CD verification |
 
----
+## PR Count Per Person
+
+| Person | PRs |
+|--------|-----|
+| **Nawaf** | #23, #25 (paired) |
+| **Bader** | #20, #25 (paired) |
+| **Abdulrahem** | #19, #24, #25 (paired) |
+| **Yousef** | #21, #22, #25 (paired) |
 
 ## Acceptance Criteria
 
@@ -26,4 +46,6 @@
 - [ ] ElastiCache Redis connected (rate limiter operational)
 - [ ] S3 document uploads working via storage_service.py
 - [ ] Databar and Fetch MCP tools available to research agent
+- [ ] CloudFront serves frontend with proper caching headers
 - [ ] Zero-downtime deploy via ECS rolling update
+- [ ] Every team member has deployed at least 1 infra resource

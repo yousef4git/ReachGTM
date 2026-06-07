@@ -1,27 +1,71 @@
-# Epic 2 — Agent Implementation
+# Epic 2 — Agent Implementation (Redistributed for Bootcamp)
 
-**Goal:** Replace all stub nodes with real LangGraph agent implementations. Strategy generation works end-to-end with SSE streaming.
+**Goal:** Every team member owns real LangGraph agent nodes AND steps outside their comfort zone — no one stays in just agents, backend, or frontend.
 
 **Target branch:** `staging`
 
 ---
 
-## PRs in this Epic
+## Distribution Philosophy
 
-| PR | Title | Owner | Branch |
-|---|---|---|---|
-| #9 | Orchestrator node — real routing logic | Yousef | `epic-2/pr-9-orchestrator` |
-| #10 | Research node — Perplexity MCP integration | Abdulrahem | `epic-2/pr-10-research` |
-| #11 | Strategy node — GTM framework generation | Yousef | `epic-2/pr-11-strategy` |
-| #12 | Content node — ColdIQ email + LinkedIn generation | Yousef | `epic-2/pr-12-content` |
-| #13 | Brand alignment node — RAG scoring + revision loop | Abdulrahem | `epic-2/pr-13-brand` |
-| #14 | Backend SSE endpoint — /strategy/generate/stream | Nawaf | `epic-2/pr-14-sse` |
-| #15 | pm-skills LangChain tool wrappers | Yousef | `epic-2/pr-15-pm-skills` |
-| #16 | ColdIQ LangChain tool wrappers | Yousef | `epic-2/pr-16-coldiq` |
-| #17 | Strategy page — live SSE + AgentProgress | Bader | `epic-2/pr-17-strategy-ui` |
-| #18 | Content + Knowledge pages | Bader | `epic-2/pr-18-content-ui` |
+| Person | Before | After rotation | Learns |
+|--------|--------|---------------|--------|
+| **Nawaf** | Backend-only (#14) | Orchestrator + Content node + Content UI | LangGraph, LLM prompts, frontend |
+| **Bader** | Frontend-only (#17, #18) | Strategy node + Backend SSE | LangGraph agents, FastAPI streaming |
+| **Abdulrahem** | ML/RAG (#10, #13) | Research node + ColdIQ tools | LangChain tool wrappers, keeps MCP strength |
+| **Yousef** | Everything (#9, #11, #12, #15, #16) | Brand alignment + Strategy UI + pm-skills tools | pgvector RAG, frontend (delegates, doesn't own everything) |
 
 ---
+
+## PRs in this Epic
+
+| PR | Title | Owner | Branch | What They Learn |
+|----|-------|-------|--------|----------------|
+| #9 | Orchestrator node — real routing + conditional edges | **Nawaf** | `epic-5/pr-9-orchestrator` | LangGraph routing logic, state management |
+| #10 | Research node — Perplexity MCP + research report generation | **Abdulrahem** | `epic-5/pr-10-research` | MCP tool integration, async search agents |
+| #11 | Strategy node — GTM framework via pm-skills prompts | **Bader** | `epic-5/pr-11-strategy` | LangGraph nodes, prompt engineering |
+| #12 | Content node — ColdIQ email + LinkedIn generation | **Nawaf** | `epic-5/pr-12-content` | LLM content generation, output validation |
+| #13 | Brand alignment node — RAG scoring via pgvector + revision loop | **Yousef** | `epic-5/pr-13-brand` | pgvector embeddings, RAG scoring, self-reflection loops |
+| #14 | Backend SSE endpoint — `/strategy/generate/stream` with EventSource | **Bader** | `epic-5/pr-14-sse` | FastAPI async streaming, SSE protocol |
+| #15 | pm-skills LangChain tool wrappers | **Yousef** | `epic-5/pr-15-pm-skills` | LangChain tool interface, prompt templates |
+| #16 | ColdIQ LangChain tool wrappers | **Abdulrahem** | `epic-5/pr-16-coldiq` | LangChain tool composition, sales prompt frameworks |
+| #17 | Strategy UI page — SSE consumption + AgentProgress | **Yousef** | `epic-5/pr-17-strategy-ui` | Next.js, TanStack Query, SSE in browser |
+| #18 | Content + Knowledge pages | **Nawaf** | `epic-5/pr-18-content-ui` | Frontend with Zustand, Tailwind CSS |
+
+## PR Count Per Person
+
+| Person | Agent node | Tools | Backend | Frontend | Total |
+|--------|-----------|-------|---------|----------|-------|
+| **Nawaf** | #9, #12 | — | — | #18 | 3 PRs |
+| **Bader** | #11 | — | #14 | — | 2 PRs |
+| **Abdulrahem** | #10 | #16 | — | — | 2 PRs |
+| **Yousef** | #13 | #15 | — | #17 | 3 PRs |
+
+No one has more than 3 PRs. Everyone learns something outside their original lane.
+
+## Review Rotation
+
+- Nawaf's PRs → reviewed by Bader
+- Bader's PRs → reviewed by Abdulrahem
+- Abdulrahem's PRs → reviewed by Yousef
+- Yousef's PRs → reviewed by Nawaf
+
+Full circle. No single reviewer bottleneck.
+
+## Dependency Order
+
+```mermaid
+graph TD
+  A[#9 Orchestrator - Nawaf] --> B[#10 Research - Abdulrahem]
+  A --> E[#15 pm-skills - Yousef]
+  A --> F[#16 ColdIQ - Abdulrahem]
+  B --> C[#11 Strategy - Bader]
+  C --> D[#12 Content - Nawaf]
+  D --> G[#13 Brand - Yousef]
+  C --> H[#14 SSE - Bader]
+  H --> I[#17 Strategy UI - Yousef]
+  I --> J[#18 Content UI - Nawaf]
+```
 
 ## Acceptance Criteria
 
@@ -31,3 +75,4 @@
 - [ ] ResearchReport, GTMStrategy, ContentAsset[] persisted to DB after run
 - [ ] Brand alignment score > 0.0 on all content assets
 - [ ] LangSmith traces visible in LangSmith Cloud dashboard
+- [ ] Every team member has merged at least 2 PRs and reviewed 2+ PRs

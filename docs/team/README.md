@@ -1,13 +1,18 @@
 # Team Guides
 
+🧭 **Bootcamp rotation plan** → [rotation-plan.md](rotation-plan.md)
+Everyone touches agents, backend, frontend, AND infra. No silos.
+
 Each guide covers: local setup, your specific PRs, exact files to implement, code patterns, test instructions, and PR checklist.
 
-| Guide | Owner | Epic 2 PRs | Epic 3 PRs |
-|---|---|---|---|
-| [yousef.md](yousef.md) | Yousef (Architecture) | #9 Orchestrator, #11 Strategy, #12 Content, #15 pm-skills, #16 ColdIQ | #19 ECS cluster, #20 OIDC |
-| [nawaf.md](nawaf.md) | Nawaf (Backend) | #14 SSE endpoint | #21 RDS/ElastiCache, #22 S3 |
-| [bader.md](bader.md) | Bader (Frontend) | #17 Strategy UI, #18 Content/Knowledge UI | #23 CloudFront CDN |
-| [abdulrahem.md](abdulrahem.md) | Abdulrahem (ML) | #10 Research node, #13 Brand alignment | #24 Databar/Fetch MCP |
+Original allocation (pre-rotation):
+
+| | Guide | Owner | Epic 2 PRs | Epic 3 PRs |
+|---|---|---|---|---|
+| | [yousef.md](yousef.md) | Yousef | #9 Orchestrator, #11 Strategy, #12 Content, #15 pm-skills, #16 ColdIQ | #19 ECS cluster, #20 OIDC |
+| | [nawaf.md](nawaf.md) | Nawaf | #14 SSE endpoint | #21 RDS/ElastiCache, #22 S3 |
+| | [bader.md](bader.md) | Bader | #17 Strategy UI, #18 Content/Knowledge UI | #23 CloudFront CDN |
+| | [abdulrahem.md](abdulrahem.md) | Abdulrahem | #10 Research node, #13 Brand alignment | #24 Databar/Fetch MCP |
 
 ## PR Dependency Order (Epic 2)
 
