@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { TokenResponse, LoginRequest, RegisterRequest } from "@/types";
+import type { TokenResponse, LoginRequest, RegisterRequest, ContentAsset, KnowledgeDocument } from "@/types";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
@@ -40,17 +40,31 @@ export const strategyApi = {
     api.post("/api/v1/strategy/generate", body).then((r) => r.data),
   get: (id: string) =>
     api.get(`/api/v1/strategy/${id}`).then((r) => r.data),
+  list: () =>
+    api.get("/api/v1/strategy").then((r) => r.data),
 };
+
+export const contentApi = {
+  list: () =>
+    api.get<ContentAsset[]>("/api/v1/content/").then((r) => r.data),
+  generate: (body: { strategy_id?: string; content_types: string[]; count_per_type: number }) =>
+    api.post<{ content_assets: ContentAsset[]; session_id?: string }>("/api/v1/content/generate", body).then((r) => r.data),
+};
+
+export const SSE_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/^http/, "http") ?? "http://localhost:8000";
 
 export const knowledgeApi = {
   upload: (file: File, doc_type: string) => {
     const form = new FormData();
     form.append("file", file);
     form.append("doc_type", doc_type);
-    return api.post("/api/v1/knowledge/upload", form, {
+    return api.post<KnowledgeDocument>("/api/v1/knowledge/upload", form, {
       headers: { "Content-Type": "multipart/form-data" },
     }).then((r) => r.data);
   },
+  list: () =>
+    api.get<KnowledgeDocument[]>("/api/v1/knowledge/").then((r) => r.data),
 };
 
 export default api;

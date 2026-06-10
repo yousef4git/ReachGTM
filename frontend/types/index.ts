@@ -85,3 +85,12 @@ export interface LoginRequest {
   email: string;
   password: string;
 }
+
+export interface KnowledgeDocument {
+  id: string;
+  filename: string;
+  doc_type: string;
+  status: "pending" | "indexed" | "failed";
+  chunk_count?: number;
+  created_at: string;
+}
