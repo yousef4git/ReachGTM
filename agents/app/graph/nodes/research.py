@@ -29,7 +29,7 @@ async def _run_perplexity_search(query: str) -> list[str]:
         from agents.app.tools.mcp_client import get_mcp_tools
         tools = await get_mcp_tools()
         if not tools:
-            return[]
+            return []
         
         tool = tools[0]
         result = await tool.ainvoke({"query": query})
@@ -39,7 +39,7 @@ async def _run_perplexity_search(query: str) -> list[str]:
         
         return [str(result)]
     except Exception as exc:
-        return [f"oreolexity_error:{type(exc).__name__}"]
+        return [f"perplexity_error:{type(exc).__name__}"]
 
 
 def _build_fallback_report(state: GTMState, goal: str, sources: list[str]) -> ResearchReport:
