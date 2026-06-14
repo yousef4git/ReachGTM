@@ -40,7 +40,12 @@ export const strategyApi = {
     api.post("/api/v1/strategy/generate", body).then((r) => r.data),
   get: (id: string) =>
     api.get(`/api/v1/strategy/${id}`).then((r) => r.data),
+  list: () =>
+    api.get("/api/v1/strategy").then((r) => r.data),
 };
+
+export const SSE_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/^http/, "http") ?? "http://localhost:8000";
 
 export const knowledgeApi = {
   upload: (file: File, doc_type: string) => {
