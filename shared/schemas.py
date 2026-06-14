@@ -206,6 +206,6 @@ class StrategyGenerateRequest(BaseModel):
     additional_context: Optional[str] = None
 
 class ContentGenerateRequest(BaseModel):
-    strategy_id: UUID
+    strategy_id: Optional[UUID] = None
     content_types: list[ContentType]
     count_per_type: int = 3
