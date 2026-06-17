@@ -5,8 +5,14 @@ from openai import AsyncOpenAI
 from pypdf import PdfReader
 from docx import Document as DocxDocument
 from backend.app.config import settings
+from backend.app.services.storage_service import upload_object
 
 openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+
+def _storage_key(company_id: str, doc_id: uuid.UUID, filename: str) -> str:
+    """Tenant-scoped object key for a raw uploaded document."""
+    return f"{company_id}/{doc_id}/{filename}"
 
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
@@ -54,10 +60,17 @@ async def ingest_document(
     doc_id = uuid.uuid4()
     namespace = f"{company_id}:{doc_type}"
 
+    # Persist the raw file to object storage when configured (skipped in local
+    # dev where no bucket is set). The key is stored for later retrieval.
+    s3_key = None
+    if settings.s3_bucket_name:
+        s3_key = _storage_key(company_id, doc_id, filename)
+        await upload_object(content, s3_key)
+
     await conn.execute(
-        """INSERT INTO knowledge_documents (id, company_id, filename, doc_type, status)
-           VALUES ($1, $2, $3, $4, 'pending')""",
-        doc_id, uuid.UUID(company_id), filename, doc_type,
+        """INSERT INTO knowledge_documents (id, company_id, filename, doc_type, status, s3_key)
+           VALUES ($1, $2, $3, $4, 'pending', $5)""",
+        doc_id, uuid.UUID(company_id), filename, doc_type, s3_key,
     )
 
     try:
