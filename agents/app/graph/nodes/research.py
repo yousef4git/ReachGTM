@@ -30,16 +30,44 @@ async def _run_perplexity_search(query: str) -> list[str]:
         tools = await get_mcp_tools()
         if not tools:
             return []
-        
+
         tool = tools[0]
         result = await tool.ainvoke({"query": query})
 
         if isinstance(result, str):
             return [result]
-        
+
         return [str(result)]
     except Exception as exc:
         return [f"perplexity_error:{type(exc).__name__}"]
+
+
+async def _invoke_mcp_tool(server: str, name_contains: str, args: dict) -> list[str]:
+    """Best-effort: invoke an MCP tool from `server` whose name matches.
+
+    Returns the tool output as a one-item list of text, or [] when the server is
+    unavailable. Never raises — failures degrade to an error-tagged source.
+    """
+    try:
+        from agents.app.tools.mcp_client import get_mcp_tools
+        tools = await get_mcp_tools(server)
+        if not tools:
+            return []
+        tool = next((t for t in tools if name_contains in t.name.lower()), tools[0])
+        result = await tool.ainvoke(args)
+        return [result if isinstance(result, str) else str(result)]
+    except Exception as exc:
+        return [f"{server}_error:{type(exc).__name__}"]
+
+
+async def _run_databar_enrich(company_name: str) -> list[str]:
+    """Enrich a company via the Databar MCP tool (no-op when unconfigured)."""
+    return await _invoke_mcp_tool("databar", "enrich", {"company": company_name})
+
+
+async def _run_fetch_url(url: str) -> list[str]:
+    """Fetch a URL's content via the Fetch MCP tool (no-op when unconfigured)."""
+    return await _invoke_mcp_tool("fetch", "fetch", {"url": url})
 
 
 def _build_fallback_report(state: GTMState, goal: str, sources: list[str]) -> ResearchReport:
@@ -117,6 +145,16 @@ async def research_node(state: GTMState) -> GTMState:
         sources = await _run_perplexity_search(query)
     except Exception as exc:
         sources = [f"perplexity_error:{type(exc).__name__}"]
+
+    # Best-effort enrichment via Databar + Fetch MCP. Both no-op (return []) when
+    # not configured, so this never breaks the offline / stub path.
+    company_name = state.metadata.get("company_name")
+    if company_name:
+        sources += await _run_databar_enrich(str(company_name))
+
+    website = state.metadata.get("website")
+    if website:
+        sources += await _run_fetch_url(str(website))
 
     report = _build_fallback_report(state, goal, sources)
 
