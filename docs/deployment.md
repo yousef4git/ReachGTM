@@ -1,5 +1,10 @@
 # ReachGTM — Deployment Guide
 
+> **Production target:** ReachGTM deploys to **Railway** (backend, agents,
+> Postgres, Redis) and **Cloudflare Pages** (frontend). See
+> [deployment-railway.md](deployment-railway.md). The AWS sections below
+> (ECS/ECR/RDS/ElastiCache/S3/CloudFront) are **legacy** and being superseded.
+
 ## Prerequisites
 
 - Docker Desktop 4.x+
