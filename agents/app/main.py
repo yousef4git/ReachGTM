@@ -44,3 +44,26 @@ async def run(body: dict):
         count_per_type=body.get("count_per_type", 3),
     )
     return StreamingResponse(stream_graph_sse(state), media_type="text/event-stream")
+
+
+@app.post("/monitor/competitors")
+async def monitor_competitors_endpoint(body: dict):
+    """Weekly competitor monitoring trigger (e.g. called by a scheduled cron).
+
+    Body: {competitors: [str], last_run?: ISO-8601 datetime}. Refreshes signals
+    via Perplexity MCP only when the weekly cadence is due.
+    """
+    from datetime import datetime
+    from agents.app.tools.competitor_monitor import monitor_competitors
+
+    last_run_raw = body.get("last_run")
+    last_run = datetime.fromisoformat(last_run_raw) if last_run_raw else None
+
+    result = await monitor_competitors(
+        competitors=body.get("competitors", []),
+        last_run=last_run,
+    )
+    return {
+        "refreshed": result["refreshed"],
+        "signals": [s.model_dump(mode="json") for s in result["signals"]],
+    }
