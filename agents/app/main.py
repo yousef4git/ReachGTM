@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from agents.app.config import settings
 
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
@@ -28,5 +29,18 @@ async def health():
 
 @app.post("/run")
 async def run(body: dict):
-    # TODO: Epic 2 PR #14 — invoke graph, stream events
-    return {"status": "not_implemented"}
+    """Run the GTM graph and stream AgentEvents as SSE.
+
+    Body: {company_id?, user_id?, goal?, content_types?, count_per_type?}.
+    The goal is driven via metadata (see agents.app.graph.stream).
+    """
+    from agents.app.graph.stream import build_initial_state, stream_graph_sse
+
+    state = build_initial_state(
+        company_id=body.get("company_id"),
+        user_id=body.get("user_id"),
+        goal=body.get("goal"),
+        content_types=body.get("content_types"),
+        count_per_type=body.get("count_per_type", 3),
+    )
+    return StreamingResponse(stream_graph_sse(state), media_type="text/event-stream")
