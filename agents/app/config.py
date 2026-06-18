@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     langsmith_api_key: str = ""
     langsmith_project: str = "reachgtm"
     perplexity_api_key: str = ""
+    databar_api_key: str = ""
+    databar_mcp_url: str = ""  # Databar MCP endpoint (from Databar docs)
+    fetch_mcp_enabled: bool = True  # run the reference Fetch MCP server (stdio)
     environment: str = "development"
 
 settings = Settings()
