@@ -21,6 +21,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from agents.app.graph.state import GTMState
+from agents.app.graph.nodes.variants import expand_assets_to_variants
 from agents.app.prompts.content import CONTENT_SYSTEM_PROMPT
 from shared.schemas import ContentAsset, ContentType, GTMStrategy
 
@@ -149,6 +150,11 @@ async def content_node(state: GTMState) -> GTMState:
     except Exception as exc:
         logger.warning("LLM content generation failed (%s), using templates", exc)
         assets = _generate_template_fallback(types_to_generate, count_per_type, ctx)
+
+    # A/B variant generation (Phase 2): opt-in via metadata; expands each asset
+    # into 3 split-test variants. Off by default to preserve existing behaviour.
+    if state.metadata.get("ab_variants"):
+        assets = expand_assets_to_variants(assets)
 
     return state.model_copy(update={
         "current_agent": "content",
