@@ -23,9 +23,12 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from agents.app.graph.state import GTMState
 from agents.app.graph.nodes.variants import expand_assets_to_variants
 from agents.app.prompts.content import CONTENT_SYSTEM_PROMPT
-from shared.schemas import ContentAsset, ContentType, GTMStrategy
+from shared.schemas import ContentAsset, ContentType, GTMStrategy, ICPProfile
 
 logger = logging.getLogger(__name__)
+
+# Multi-ICP mode generates content for up to this many ICPs in one run.
+MAX_ICPS = 3
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +58,42 @@ def _strategy_context(strategy: Optional[GTMStrategy]) -> dict:
         "top_channels": ", ".join(c.name for c in strategy.channels[:3]),
         "positioning": strategy.positioning_statement[:200],
     }
+
+
+def _resolve_target_icps(state: GTMState) -> list[ICPProfile]:
+    """Collect the ICPs to target: the strategy ICP plus metadata.additional_icps.
+
+    Deduplicated by title and capped at MAX_ICPS. Returns [] when there is no
+    strategy and no additional ICPs (single/stub path is used in that case).
+    """
+    icps: list[ICPProfile] = []
+    if state.gtm_strategy is not None:
+        icps.append(state.gtm_strategy.icp)
+    for raw in state.metadata.get("additional_icps", []):
+        try:
+            icps.append(raw if isinstance(raw, ICPProfile) else ICPProfile(**raw))
+        except Exception:  # noqa: BLE001 — skip malformed ICP entries
+            continue
+
+    seen: set[str] = set()
+    unique: list[ICPProfile] = []
+    for icp in icps:
+        if icp.title not in seen:
+            seen.add(icp.title)
+            unique.append(icp)
+    return unique[:MAX_ICPS]
+
+
+def _ctx_for_icp(base_ctx: dict, icp: ICPProfile) -> dict:
+    """Override the ICP-specific fields of a base context for one ICP."""
+    ctx = dict(base_ctx)
+    ctx.update({
+        "industry": icp.industry,
+        "icp_title": icp.title,
+        "company_size": icp.company_size,
+        "pain_points": icp.pain_points[:3],
+    })
+    return ctx
 
 
 def _ctx_formatted(ctx: dict) -> str:
@@ -142,14 +181,20 @@ async def content_node(state: GTMState) -> GTMState:
     if not types_to_generate:
         types_to_generate = [ContentType.COLD_EMAIL, ContentType.LINKEDIN_POST]
 
-    ctx = _strategy_context(state.gtm_strategy)
+    base_ctx = _strategy_context(state.gtm_strategy)
+    icps = _resolve_target_icps(state)
 
-    # Attempt LLM-based generation; fall back to template-based if unavailable
-    try:
-        assets = await _generate_with_llm(types_to_generate, count_per_type, ctx)
-    except Exception as exc:
-        logger.warning("LLM content generation failed (%s), using templates", exc)
-        assets = _generate_template_fallback(types_to_generate, count_per_type, ctx)
+    # Multi-ICP mode (Phase 2): when 2+ ICPs are available, generate the content
+    # set for each ICP and tag the assets. A single ICP (or none) uses the
+    # existing path, so default behaviour is unchanged.
+    if len(icps) >= 2:
+        assets: list[ContentAsset] = []
+        for icp in icps:
+            icp_ctx = _ctx_for_icp(base_ctx, icp)
+            icp_assets = await _generate(types_to_generate, count_per_type, icp_ctx)
+            assets.extend(a.model_copy(update={"target_icp": icp.title}) for a in icp_assets)
+    else:
+        assets = await _generate(types_to_generate, count_per_type, base_ctx)
 
     # A/B variant generation (Phase 2): opt-in via metadata; expands each asset
     # into 3 split-test variants. Off by default to preserve existing behaviour.
@@ -160,6 +205,19 @@ async def content_node(state: GTMState) -> GTMState:
         "current_agent": "content",
         "content_assets": assets,
     })
+
+
+async def _generate(
+    types_to_generate: list[ContentType],
+    count_per_type: int,
+    ctx: dict,
+) -> list[ContentAsset]:
+    """Generate content for one context: LLM, falling back to templates."""
+    try:
+        return await _generate_with_llm(types_to_generate, count_per_type, ctx)
+    except Exception as exc:  # noqa: BLE001 — any LLM failure -> deterministic templates
+        logger.warning("LLM content generation failed (%s), using templates", exc)
+        return _generate_template_fallback(types_to_generate, count_per_type, ctx)
 
 
 async def _generate_with_llm(
