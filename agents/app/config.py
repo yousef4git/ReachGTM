@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     databar_api_key: str = ""
     databar_mcp_url: str = ""  # Databar MCP endpoint (from Databar docs)
     fetch_mcp_enabled: bool = True  # run the reference Fetch MCP server (stdio)
+    attio_api_key: str = ""
+    attio_mcp_url: str = ""  # Attio CRM MCP endpoint (from Attio docs)
     environment: str = "development"
 
 settings = Settings()
