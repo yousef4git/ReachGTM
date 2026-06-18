@@ -158,6 +158,12 @@ async def research_node(state: GTMState) -> GTMState:
 
     report = _build_fallback_report(state, goal, sources)
 
+    # Best-effort: enrich the ICP from Attio CRM (no-op when not configured).
+    from agents.app.tools.attio_enrich import enrich_icp_from_attio
+    enriched_icp = await enrich_icp_from_attio(report.icp)
+    if enriched_icp is not report.icp:
+        report = report.model_copy(update={"icp": enriched_icp})
+
     return state.model_copy(
         update={
             "current_agent": "research",
