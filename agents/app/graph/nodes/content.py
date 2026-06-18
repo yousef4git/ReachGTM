@@ -188,7 +188,7 @@ async def content_node(state: GTMState) -> GTMState:
     # set for each ICP and tag the assets. A single ICP (or none) uses the
     # existing path, so default behaviour is unchanged.
     if len(icps) >= 2:
-        assets = []
+        assets: list[ContentAsset] = []
         for icp in icps:
             icp_ctx = _ctx_for_icp(base_ctx, icp)
             icp_assets = await _generate(types_to_generate, count_per_type, icp_ctx)
