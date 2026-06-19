@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback for dynamic Next.js routes
+# All static pages serve their own HTML; dynamic routes fall through to index.html
+/strategy/* /index.html 200
+/content/create /index.html 200

@@ -1,5 +1,11 @@
 "use client";
 
+// Static export: no pre-rendered params — Cloudflare Pages SPA fallback serves index.html
+// Client-side JS handles the dynamic route resolution
+export function generateStaticParams() {
+  return [];
+}
+
 import Link from "next/link";
 import { useStrategy } from "@/hooks/useStrategy";
 import { StrategyCard } from "@/components/strategy/StrategyCard";
