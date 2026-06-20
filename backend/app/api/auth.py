@@ -52,12 +52,15 @@ async def refresh(request: Request, conn: asyncpg.Connection = Depends(get_db)):
 
 @router.post("/invite")
 async def invite(request: Request, conn: asyncpg.Connection = Depends(get_db)):
-    # TODO Epic 1 PR #4 — requires owner/admin role check
+    role = getattr(request.state, "role", "member")
+    if role not in {"owner", "admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
     company_id = request.state.company_id
     user_id = request.state.user_id
     body = await request.json()
-    role = body.get("role", "member")
-    token = auth_service.create_invite_token(company_id, user_id, role)
+    invite_role = body.get("role", "member")
+    token = auth_service.create_invite_token(company_id, user_id, invite_role)
     return {"invite_token": token, "invite_url": f"/register?invite={token}"}
 
 @router.post("/accept-invite", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
