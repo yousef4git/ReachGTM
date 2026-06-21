@@ -1,8 +1,16 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+import uuid
+import asyncpg
+
 from shared.schemas import StrategyGenerateRequest
+from backend.app.db.connection import get_db
 from backend.app.services.agent_stream import stream_strategy_events
+from backend.app.services.strategy_service import (
+    create_strategy,
+    get_strategy_by_id,
+)
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
@@ -35,12 +43,30 @@ async def generate_strategy_stream(body: StrategyStreamRequest, request: Request
 
 
 @router.post("/generate")
-async def generate_strategy(body: StrategyGenerateRequest):
-    # TODO: Epic 2 PR #17 — non-streaming generate + persist
-    return {"status": "not_implemented"}
+async def generate_strategy(
+    body: StrategyGenerateRequest,
+    request: Request,
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    strategy = await create_strategy(
+        conn=conn,
+        company_id=request.state.company_id,
+        user_id=request.state.user_id,
+        session_id=uuid.uuid4(),
+        payload=body.model_dump(),
+    )
+
+    return strategy
 
 
 @router.get("/{strategy_id}")
-async def get_strategy(strategy_id: str):
-    # TODO: Epic 2 PR #17 — fetches strategy from DB
-    return {"status": "not_implemented"}
+async def get_strategy(
+    strategy_id: str,
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    strategy = await get_strategy_by_id(conn, strategy_id)
+
+    if strategy is None:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+
+    return strategy
