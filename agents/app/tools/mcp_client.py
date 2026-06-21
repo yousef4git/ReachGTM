@@ -7,10 +7,11 @@ LangChain tools:
   - databar    : company/people data enrichment (HTTP, needs DATABAR_API_KEY + DATABAR_MCP_URL)
   - fetch      : fetch a URL's content (reference mcp-server-fetch, stdio, no key)
   - attio      : Attio CRM (enrich ICP, HTTP, needs ATTIO_API_KEY + ATTIO_MCP_URL)
+  - hubspot    : HubSpot CRM (sync content, HTTP, needs HUBSPOT_API_KEY + HUBSPOT_MCP_URL)
 
 A server is only registered when it is configured. `get_mcp_tools` never raises:
 if a server is missing or unreachable it returns [], so the graph degrades
-gracefully (the research node falls back to a stub report).
+gracefully.
 """
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
@@ -36,8 +37,6 @@ def _server_configs() -> dict:
         }
 
     if settings.fetch_mcp_enabled:
-        # Reference fetch server, installed via agents/requirements.txt
-        # (mcp-server-fetch) and run as a stdio subprocess.
         configs["fetch"] = {
             "command": "python",
             "args": ["-m", "mcp_server_fetch"],
@@ -51,15 +50,22 @@ def _server_configs() -> dict:
             "headers": {"Authorization": f"Bearer {settings.attio_api_key}"},
         }
 
+    if settings.hubspot_api_key and settings.hubspot_mcp_url:
+        configs["hubspot"] = {
+            "url": settings.hubspot_mcp_url,
+            "transport": "streamable_http",
+            "headers": {"Authorization": f"Bearer {settings.hubspot_api_key}"},
+        }
+
     return configs
 
 
 async def get_mcp_tools(server: str = "perplexity") -> list:
     """Return LangChain tools from the named MCP server.
 
-    Supported servers: 'perplexity', 'databar', 'fetch', 'attio'. Returns []
-    when the server is not configured or cannot be reached, so callers degrade
-    gracefully.
+    Supported servers: 'perplexity', 'databar', 'fetch', 'attio', 'hubspot'.
+    Returns [] when the server is not configured or cannot be reached, so callers
+    degrade gracefully.
     """
     cfg = _server_configs().get(server)
     if cfg is None:
