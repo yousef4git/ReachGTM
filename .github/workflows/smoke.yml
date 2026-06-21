@@ -1,0 +1,35 @@
+name: Smoke Tests
+
+# Runs the production smoke suite against deployed URLs. Triggered manually
+# (workflow_dispatch) and reused by the deploy workflows (workflow_call) for
+# post-deploy / zero-downtime verification.
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install smoke dependencies
+        run: pip install -r smoke/requirements.txt
+
+      - name: Run smoke tests
+        env:
+          # Fall back to the known Railway backend URL so the core checks run
+          # even if no repo variable is configured. Override via repo vars.
+          SMOKE_BACKEND_URL: ${{ vars.SMOKE_BACKEND_URL || 'https://reachgtm-backend.railway.app' }}
+          SMOKE_AGENTS_URL: ${{ vars.SMOKE_AGENTS_URL || 'https://reachgtm-agents.railway.app' }}
+          SMOKE_FRONTEND_URL: ${{ vars.SMOKE_FRONTEND_URL }}
+          SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}
+        run: pytest smoke/ -v -m smoke
