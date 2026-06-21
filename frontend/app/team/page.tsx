@@ -4,10 +4,23 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Users } from "lucide-react";
 import { teamApi } from "@/lib/api";
 import { getRole, getUserId } from "@/lib/auth";
-import type { AssignableRole, TeamMember, TeamRole } from "@/types";
+import type {
+  AssignableRole,
+  TeamMember,
+  TeamRole,
+  TeamSettings,
+  WorkspacePlan,
+} from "@/types";
 
 // Roles an owner/admin is allowed to invite as.
 const INVITABLE_ROLES: TeamRole[] = ["member", "admin"];
+
+// Selectable plans. Mirrors PLAN_SEAT_LIMITS in backend/app/api/team.py.
+const PLANS: { value: WorkspacePlan; label: string }[] = [
+  { value: "free", label: "Free" },
+  { value: "pro", label: "Pro" },
+  { value: "enterprise", label: "Enterprise" },
+];
 
 export default function TeamPage() {
   // null = not yet resolved (avoids hydration mismatch since role comes from localStorage)
@@ -27,6 +40,13 @@ export default function TeamPage() {
   const [membersError, setMembersError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
+  // Workspace settings state (issue #31).
+  const [settings, setSettings] = useState<TeamSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+
   const canInvite = role === "owner" || role === "admin";
   const isOwner = role === "owner";
 
@@ -42,18 +62,64 @@ export default function TeamPage() {
     }
   }, []);
 
+  const loadSettings = useCallback(async () => {
+    setSettingsError(null);
+    setSettingsLoading(true);
+    try {
+      const s = await teamApi.getSettings();
+      setSettings(s);
+      setNameDraft(s.name);
+    } catch (e: unknown) {
+      setSettingsError(e instanceof Error ? e.message : "Failed to load settings");
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     setRole(getRole());
     setUserId(getUserId());
     setResolved(true);
   }, []);
 
-  // Owners and admins can view the members list.
+  // Owners and admins can view the members list and workspace settings.
   useEffect(() => {
     if (resolved && canInvite) {
       void loadMembers();
+      void loadSettings();
     }
-  }, [resolved, canInvite, loadMembers]);
+  }, [resolved, canInvite, loadMembers, loadSettings]);
+
+  async function handleRenameWorkspace() {
+    if (!settings) return;
+    const next = nameDraft.trim();
+    if (!next || next === settings.name) return;
+    setSettingsError(null);
+    setSettingsSaving(true);
+    try {
+      const updated = await teamApi.updateSettings({ name: next });
+      setSettings(updated);
+      setNameDraft(updated.name);
+    } catch (e: unknown) {
+      setSettingsError(e instanceof Error ? e.message : "Failed to rename workspace");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function handlePlanChange(plan: WorkspacePlan) {
+    if (!settings || plan === settings.plan) return;
+    setSettingsError(null);
+    setSettingsSaving(true);
+    try {
+      const updated = await teamApi.updateSettings({ plan });
+      setSettings(updated);
+    } catch (e: unknown) {
+      setSettingsError(e instanceof Error ? e.message : "Failed to change plan");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
 
   async function handleRoleChange(member: TeamMember, nextRole: AssignableRole) {
     setMembersError(null);
@@ -297,7 +363,131 @@ export default function TeamPage() {
         </div>
       </section>
 
-      {/* Workspace settings are added by issue #31. */}
+      {/* Workspace settings (issue #31) */}
+      <section className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Workspace settings</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              {isOwner
+                ? "Manage your workspace name, plan, and seat usage."
+                : "Your workspace plan and seat usage."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadSettings()}
+            disabled={settingsLoading}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {settingsLoading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
+
+        {settingsError && <p className="mt-3 text-sm text-red-600">{settingsError}</p>}
+
+        {!settings && settingsLoading && (
+          <p className="mt-4 text-sm text-gray-500">Loading settings...</p>
+        )}
+
+        {settings && (
+          <div className="mt-4 space-y-6">
+            {/* Workspace name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Workspace name</label>
+              {isOwner ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleRenameWorkspace()}
+                    disabled={
+                      settingsSaving ||
+                      !nameDraft.trim() ||
+                      nameDraft.trim() === settings.name
+                    }
+                    className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {settingsSaving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-1 text-sm text-gray-900">{settings.name}</p>
+              )}
+            </div>
+
+            {/* Plan */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Plan</label>
+              {isOwner ? (
+                <select
+                  value={settings.plan}
+                  onChange={(e) => void handlePlanChange(e.target.value as WorkspacePlan)}
+                  disabled={settingsSaving}
+                  className="mt-1 w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                >
+                  {PLANS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="mt-1">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-700">
+                    {settings.plan}
+                  </span>
+                </p>
+              )}
+              {isOwner && (
+                <p className="mt-2 text-xs text-amber-700">
+                  Note: billing is not yet integrated. Switching plans takes effect
+                  immediately and does not charge a payment method.
+                </p>
+              )}
+            </div>
+
+            {/* Seat usage */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">Seats</label>
+                <span className="text-sm text-gray-600">
+                  {settings.seat_count} / {settings.seat_limit}
+                </span>
+              </div>
+              <div className="mt-2 h-2 w-full max-w-sm overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={
+                    settings.seat_count >= settings.seat_limit
+                      ? "h-full rounded-full bg-red-500"
+                      : "h-full rounded-full bg-blue-600"
+                  }
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      settings.seat_limit > 0
+                        ? (settings.seat_count / settings.seat_limit) * 100
+                        : 0
+                    )}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-500">
+                {settings.seat_count >= settings.seat_limit
+                  ? "You've reached your seat limit. Upgrade your plan to invite more teammates."
+                  : `${settings.seat_limit - settings.seat_count} seat${
+                      settings.seat_limit - settings.seat_count === 1 ? "" : "s"
+                    } remaining on the ${settings.plan} plan.`}
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
