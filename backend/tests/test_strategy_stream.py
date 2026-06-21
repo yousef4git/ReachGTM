@@ -145,3 +145,44 @@ class TestEndpoint:
         assert resp.headers["content-type"].startswith("text/event-stream")
         body = resp.text
         assert body.index("agent_start") < body.index("agent_complete") < body.index("event: done")
+
+
+class TestGetStream:
+    """The browser EventSource API is GET-only and can't set headers, so the
+    SSE route must also accept a GET that self-authenticates via a ?token=
+    query param. Without it the live strategy page can never connect.
+    """
+
+    def test_get_stream_requires_token(self):
+        client = TestClient(_make_app())
+        resp = client.get("/api/v1/strategy/generate/stream", params={"goal": "x"})
+        assert resp.status_code == 401
+
+    def test_get_stream_rejects_invalid_token(self):
+        client = TestClient(_make_app())
+        resp = client.get(
+            "/api/v1/strategy/generate/stream",
+            params={"goal": "x", "token": "not-a-jwt"},
+        )
+        assert resp.status_code == 401
+
+    def test_get_stream_authenticated_via_query_param(self, monkeypatch):
+        async def _fake_stream(**kwargs):
+            yield "event: agent_start\ndata: {}\n\n"
+            yield "event: agent_progress\ndata: {}\n\n"
+            yield "event: agent_complete\ndata: {}\n\n"
+            yield "event: done\ndata: {}\n\n"
+
+        monkeypatch.setattr(strategy_api, "stream_strategy_events", _fake_stream)
+
+        token = create_access_token(uuid.uuid4(), uuid.uuid4(), "owner")
+        client = TestClient(_make_app())
+        resp = client.get(
+            "/api/v1/strategy/generate/stream",
+            params={"goal": "Launch our analytics product", "token": token},
+        )
+
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/event-stream")
+        body = resp.text
+        assert body.index("agent_start") < body.index("agent_complete") < body.index("event: done")

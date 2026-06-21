@@ -6,6 +6,12 @@ from backend.app.config import settings
 
 AUTH_ROUTES = {"/api/v1/auth/login", "/api/v1/auth/register", "/health"}
 
+# Routes that authenticate themselves (method, path). The SSE stream is opened
+# by the browser EventSource API, which is GET-only and cannot set an
+# Authorization header — so its GET variant validates a ?token= query param
+# inside the endpoint instead of via this middleware.
+SELF_AUTH_ROUTES = {("GET", "/api/v1/strategy/generate/stream")}
+
 
 def _unauthorized(detail: str) -> JSONResponse:
     # NOTE: return (not raise) — this is a BaseHTTPMiddleware, so a raised
@@ -16,6 +22,9 @@ def _unauthorized(detail: str) -> JSONResponse:
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path in AUTH_ROUTES or not request.url.path.startswith("/api/v1/"):
+            return await call_next(request)
+
+        if (request.method, request.url.path) in SELF_AUTH_ROUTES:
             return await call_next(request)
 
         auth_header = request.headers.get("Authorization", "")

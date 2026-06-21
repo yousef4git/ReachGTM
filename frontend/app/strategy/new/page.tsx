@@ -59,7 +59,8 @@ export default function NewStrategyPage() {
         };
 
         const resp = await generate(profile);
-        start(resp.session_id);
+        const goal = `Build a go-to-market strategy for ${profile.name}, a ${stage}-stage ${profile.industry} company. ${profile.description}`;
+        start(resp.session_id, goal);
       } catch (err) {
         setPhase("error");
         setFormError(err instanceof Error ? err.message : "Failed to start generation");
