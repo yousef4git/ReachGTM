@@ -17,6 +17,16 @@ async def upload_document(
     return result
 
 @router.get("/")
-async def list_documents():
-    # TODO: Epic 2
-    return {"status": "not_implemented"}
+async def list_documents(
+    request: Request,
+    conn: asyncpg.Connection = Depends(get_db),
+):
+    company_id = request.state.company_id
+    rows = await conn.fetch(
+        """SELECT id, filename, doc_type, status, s3_key, chunk_count, created_at
+           FROM knowledge_documents
+           WHERE company_id = $1
+           ORDER BY created_at DESC""",
+        company_id,
+    )
+    return {"documents": [dict(row) for row in rows]}
