@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 from shared.schemas import ContentAsset, GTMState, ValidationStatus
 
+
+logger = logging.getLogger(__name__)
 
 BRAND_ALIGNMENT_THRESHOLD = 0.7
 MAX_REVISION_ATTEMPTS = 2
@@ -109,13 +113,26 @@ async def brand_alignment_node(state: GTMState, retriever=None) -> GTMState:
                         )
                     )
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 — validation failure must not reject content
+            # A retriever/embeddings/DB failure means we could not *assess* the
+            # asset — it does NOT mean the asset is off-brand. Leave it PENDING
+            # (still reviewable) with a null score so the UI doesn't render a
+            # misleading red "Rejected / 0% on-brand" badge. REJECTED is reserved
+            # for content that was actually scored and failed brand alignment.
+            logger.warning(
+                "Brand validation could not run for asset %s; leaving PENDING: %s",
+                asset.id,
+                exc,
+            )
             validated_assets.append(
                 asset.model_copy(
                     update={
-                        "validation_status": ValidationStatus.REJECTED,
-                        "brand_alignment_score": 0.0,
-                        "revision_notes": f"Brand validation failed: {exc}",
+                        "validation_status": ValidationStatus.PENDING,
+                        "brand_alignment_score": None,
+                        "revision_notes": (
+                            "Brand validation could not be completed automatically "
+                            "and needs manual review."
+                        ),
                     }
                 )
             )
