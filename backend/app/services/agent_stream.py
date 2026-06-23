@@ -51,7 +51,7 @@ def _parse_frame(frame: str) -> tuple[Optional[str], Optional[dict]]:
     return event_type, data
 
 
-async def _persist_bundle(company_id, user_id, bundle: dict) -> Optional[dict]:
+async def _persist_bundle(company_id, user_id, bundle: Optional[dict]) -> Optional[dict]:
     """Best-effort persistence of the completed bundle. Never raises."""
     from backend.app.db.connection import get_pool
     from backend.app.services.strategy_service import persist_bundle
