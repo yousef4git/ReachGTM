@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.db.connection import init_pool, close_pool
 from backend.app.middleware.tenant import TenantMiddleware
 from backend.app.middleware.rate_limit import RateLimitMiddleware
-from backend.app.api import auth, chat, strategy, content, knowledge, memory
+from backend.app.api import auth, chat, strategy, content, knowledge, memory, team, analytics, usage
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,6 +29,9 @@ app.include_router(strategy.router, prefix="/api/v1")
 app.include_router(content.router, prefix="/api/v1")
 app.include_router(knowledge.router, prefix="/api/v1")
 app.include_router(memory.router, prefix="/api/v1")
+app.include_router(team.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
+app.include_router(usage.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():

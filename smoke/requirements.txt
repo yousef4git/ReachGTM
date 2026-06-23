@@ -1,0 +1,5 @@
+# Smoke-test suite dependencies.
+# Versions pinned to match the rest of the repo (see agents/requirements.txt)
+# for consistency — do not bump independently.
+httpx==0.28.1
+pytest==9.0.3
