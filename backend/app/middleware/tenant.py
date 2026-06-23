@@ -21,6 +21,12 @@ def _unauthorized(detail: str) -> JSONResponse:
 
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # CORS preflight: never carries credentials, so let it pass through to
+        # the CORS middleware instead of 401-ing it (which blocks the browser's
+        # real request).
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         if request.url.path in AUTH_ROUTES or not request.url.path.startswith("/api/v1/"):
             return await call_next(request)
 

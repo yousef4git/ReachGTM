@@ -1,7 +1,10 @@
 "use client";
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,34 +23,53 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4 rounded-xl bg-white p-8 shadow">
-        <h1 className="text-2xl font-bold text-gray-900">Sign in to ReachGTM</h1>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+    <AuthShell
+      title="Sign in"
+      subtitle="Welcome back to your go-to-market workspace."
+      footer={
+        <>
+          New to ReachGTM?{" "}
+          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700">
+            Create an account
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label htmlFor="email" className="field-label">Email</label>
           <input
-            type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            id="email" type="email" required autoComplete="email" placeholder="you@company.com"
+            value={email} onChange={(e) => setEmail(e.target.value)} className="field"
           />
         </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
+          <label htmlFor="password" className="field-label">Password</label>
           <input
-            type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            id="password" type="password" required autoComplete="current-password" placeholder="••••••••"
+            value={password} onChange={(e) => setPassword(e.target.value)} className="field"
           />
         </div>
-        <button
-          type="submit" disabled={loading}
-          className="w-full rounded-md bg-blue-600 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Signing in..." : "Sign in"}
+
+        <button type="submit" disabled={loading} className="btn btn-primary mt-1 w-full">
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
         </button>
-        <p className="text-center text-sm text-gray-600">
-          No account? <a href="/register" className="text-blue-600 hover:underline">Create one</a>
-        </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

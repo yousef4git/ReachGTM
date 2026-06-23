@@ -250,7 +250,7 @@ export default function NewStrategyPage() {
               <div>
                 <p className="font-semibold text-green-800">Strategy generated successfully!</p>
                 <p className="text-sm text-green-600">
-                  4 agents ran in sequence — {events.length} events captured
+                  4 agents ran in sequence, {events.length} events captured
                 </p>
               </div>
             </div>

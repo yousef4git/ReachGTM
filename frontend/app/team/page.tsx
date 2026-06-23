@@ -351,7 +351,7 @@ export default function TeamPage() {
                             </button>
                           )
                         ) : (
-                          <span className="text-xs text-gray-300">—</span>
+                          <span className="text-xs text-gray-300">·</span>
                         )}
                       </td>
                     )}
