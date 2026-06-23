@@ -1,1 +1,4 @@
 *.tsbuildinfo
+
+# Next.js static export output
+/out/
