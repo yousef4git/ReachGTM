@@ -8,7 +8,14 @@ import { AgentProgress } from "@/components/agent/AgentProgress";
 import { AgentEventFeed } from "@/components/agent/AgentEventFeed";
 import { StrategyCard } from "@/components/strategy/StrategyCard";
 import type { GTMStrategy } from "@/types";
-import { ArrowRight, Sparkles, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  ArrowRight,
+  Compass,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 
 type Stage = "seed" | "series_a" | "series_b" | "growth";
 
@@ -80,7 +87,6 @@ export default function NewStrategyPage() {
       setResult(outputEvent.data as GTMStrategy);
       setPhase("result");
     } else {
-      // Fallback: check for any data in done event
       const doneEvent = events.find((e) => e.event === "done");
       if (doneEvent?.data) {
         setResult(doneEvent.data as GTMStrategy);
@@ -96,217 +102,236 @@ export default function NewStrategyPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Generate GTM Strategy</h1>
-          <p className="mt-2 text-gray-500">
-            Describe your company and let the AI agents research, strategize, and create content.
-          </p>
-        </div>
+    <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
+      {/* Header */}
+      <header className="animate-rise mb-10">
+        <p className="eyebrow">New strategy · Step 01</p>
+        <h1 className="display mt-3 text-[2.5rem] font-medium leading-tight text-ink">
+          Aim the agents.
+        </h1>
+        <p className="mt-2.5 max-w-xl text-[1rem] leading-relaxed text-ink-muted">
+          Describe your company. Four specialist agents will research, strategize,
+          and draft content — streaming their work live.
+        </p>
+      </header>
 
-        {/* Form Phase */}
-        {phase === "form" && (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Company Profile</h2>
+      {/* Form Phase */}
+      {phase === "form" && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="card p-6 sm:p-7">
+            <h2 className="text-[0.9375rem] font-semibold text-ink">
+              Company profile
+            </h2>
+            <div className="rule mt-4 mb-5" />
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Company Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text" required value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Acme Corp"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Website</label>
-                  <input
-                    type="url" value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    placeholder="https://acme.com"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Industry <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text" required value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    placeholder="B2B SaaS, Fintech, Healthcare…"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Stage</label>
-                  <select
-                    value={stage}
-                    onChange={(e) => setStage(e.target.value as Stage)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {STAGE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Founded Year</label>
-                  <input
-                    type="number" min={1900} max={2030} value={foundedYear}
-                    onChange={(e) => setFoundedYear(e.target.value)}
-                    placeholder="2024"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Company Description <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    required value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe what your company does, who you serve, and your key differentiators…"
-                    rows={4}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="field-label">
+                  Company name <span className="text-flare-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Acme Corp"
+                  className="field"
+                />
               </div>
-            </div>
 
-            {formError && (
-              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <AlertCircle className="h-4 w-4" />
-                {formError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isGenerating}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Starting agents…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate Strategy
-                </>
-              )}
-            </button>
-          </form>
-        )}
-
-        {/* Generating Phase */}
-        {phase === "generating" && (
-          <div className="space-y-6">
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <h2 className="mb-2 text-lg font-semibold text-gray-900">
-                Agents at work
-              </h2>
-              <p className="mb-6 text-sm text-gray-500">
-                Running research → strategy → content → brand alignment
-              </p>
-              <AgentProgress events={events} />
-            </div>
-
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700">Event Log</h3>
-                <span className="text-xs text-gray-400">{events.length} events</span>
-              </div>
-              <AgentEventFeed events={events} />
-            </div>
-
-            <button
-              onClick={stop}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-
-        {/* Result Phase */}
-        {phase === "result" && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
               <div>
-                <p className="font-semibold text-green-800">Strategy generated successfully!</p>
-                <p className="text-sm text-green-600">
-                  4 agents ran in sequence, {events.length} events captured
-                </p>
+                <label className="field-label">Website</label>
+                <input
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://acme.com"
+                  className="field"
+                />
+              </div>
+
+              <div>
+                <label className="field-label">
+                  Industry <span className="text-flare-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  placeholder="B2B SaaS, Fintech, Healthcare…"
+                  className="field"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="field-label">Stage</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {STAGE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setStage(opt.value)}
+                      className={cn(
+                        "rounded-md border px-3 py-2.5 text-[0.8125rem] font-semibold transition-colors",
+                        stage === opt.value
+                          ? "border-flare-600 bg-flare-50 text-flare-700"
+                          : "border-hairline-strong text-ink-muted hover:border-ink-faint hover:text-ink"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="field-label">Founded year</label>
+                <input
+                  type="number"
+                  min={1900}
+                  max={2030}
+                  value={foundedYear}
+                  onChange={(e) => setFoundedYear(e.target.value)}
+                  placeholder="2024"
+                  className="field"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="field-label">
+                  Company description <span className="text-flare-600">*</span>
+                </label>
+                <textarea
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What you do, who you serve, and your key differentiators…"
+                  rows={4}
+                  className="field resize-none"
+                />
               </div>
             </div>
+          </div>
 
-            {result ? (
-              <StrategyCard strategy={result} className="border-green-200" />
+          {formError && (
+            <div className="alert alert-danger">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {formError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isGenerating}
+            className="btn btn-flare w-full py-3.5 text-[0.9375rem]"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Starting agents…
+              </>
             ) : (
-              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-400">
-                Strategy data will appear here once the backend is wired.
-              </div>
+              <>
+                <Compass className="h-4 w-4" />
+                Generate strategy
+              </>
             )}
+          </button>
+        </form>
+      )}
 
-            <div className="rounded-xl border bg-white p-6 shadow-sm">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">Event Log</h3>
-              <AgentEventFeed events={events} />
+      {/* Generating Phase */}
+      {phase === "generating" && (
+        <div className="space-y-5">
+          <div className="card p-6 sm:p-7">
+            <div className="flex items-center gap-2">
+              <span className="signal-pulse h-2 w-2 rounded-full bg-flare-600" />
+              <h2 className="eyebrow !text-flare-700">Agents at work</h2>
             </div>
+            <p className="mt-3 mb-6 text-[0.875rem] text-ink-muted">
+              Running research → strategy → content → brand alignment.
+            </p>
+            <AgentProgress events={events} />
+          </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => router.push("/strategy/new")}
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                Generate Another
-              </button>
-              <button
-                onClick={() => router.push("/content/create")}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                Create Content Assets
-                <ArrowRight className="h-4 w-4" />
-              </button>
+          <div className="card p-6 sm:p-7">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="eyebrow">Event log</h3>
+              <span className="mono text-[0.6875rem] text-ink-faint">
+                {events.length} events
+              </span>
+            </div>
+            <AgentEventFeed events={events} />
+          </div>
+
+          <button onClick={stop} className="btn btn-secondary w-full">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Result Phase */}
+      {phase === "result" && (
+        <div className="space-y-5">
+          <div className="alert alert-success items-center">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Strategy generated</p>
+              <p className="text-[0.8125rem] opacity-80">
+                4 agents ran in sequence · {events.length} events captured.
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Error Phase */}
-        {phase === "error" && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-              <div>
-                <p className="font-semibold text-red-800">Generation failed</p>
-                <p className="text-sm text-red-600">
-                  {streamError || formError || "An unexpected error occurred."}
-                </p>
-              </div>
+          {result ? (
+            <StrategyCard strategy={result} />
+          ) : (
+            <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-[0.875rem] text-ink-faint">
+              Strategy data will appear here once the backend is wired.
             </div>
+          )}
+
+          <div className="card p-6 sm:p-7">
+            <h3 className="eyebrow mb-3">Event log</h3>
+            <AgentEventFeed events={events} />
+          </div>
+
+          <div className="flex gap-3">
             <button
-              onClick={() => setPhase("form")}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              onClick={() => router.push("/strategy/new")}
+              className="btn btn-secondary"
             >
-              Try Again
+              Generate another
+            </button>
+            <button
+              onClick={() => router.push("/content/create")}
+              className="btn btn-primary"
+            >
+              Create content assets
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Error Phase */}
+      {phase === "error" && (
+        <div className="space-y-5">
+          <div className="alert alert-danger items-center">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-semibold">Generation failed</p>
+              <p className="text-[0.8125rem] opacity-80">
+                {streamError || formError || "An unexpected error occurred."}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setPhase("form")} className="btn btn-flare w-full">
+            Try again
+          </button>
+        </div>
+      )}
     </main>
   );
 }
