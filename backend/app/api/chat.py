@@ -1,27 +1,40 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
+import asyncpg
 
-from backend.app.services.agent_stream import stream_strategy_events
+from backend.app.db.connection import get_db
+from backend.app.services.chat_service import stream_chat
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-@router.post("/")
-async def chat(request: Request):
-    """Stream GTM pipeline agent events as SSE.
+async def _company_name(conn: asyncpg.Connection, company_id) -> str:
+    if not company_id:
+        return "your company"
+    row = await conn.fetchrow("SELECT name FROM companies WHERE id = $1::uuid", str(company_id))
+    return row["name"] if row else "your company"
 
-    The backend image does not contain the graph; it relays the agents service
-    SSE stream over HTTP (see services/agent_stream.py). Auth is enforced by
-    TenantMiddleware, which sets request.state.company_id / user_id.
+
+@router.post("/")
+async def chat(request: Request, conn: asyncpg.Connection = Depends(get_db)):
+    """Grounded company chatbot. Streams an answer (SSE) built from the company's
+    knowledge base, GTM strategy, content library, and memory.
+
+    Body: {message: str, history?: [{role, content}]}. Auth via TenantMiddleware
+    (Authorization header), which sets request.state.company_id.
     """
     body = await request.json()
+    company_id = getattr(request.state, "company_id", None)
+    message = (body.get("message") or "").strip()
+    history = body.get("history") or []
 
-    events = stream_strategy_events(
-        company_id=getattr(request.state, "company_id", None),
-        user_id=getattr(request.state, "user_id", None),
-        goal=body.get("goal"),
-        content_types=body.get("content_types"),
-        count_per_type=body.get("count_per_type", 3),
-    )
+    if not message:
+        async def _empty():
+            yield 'event: error\ndata: {"message": "Empty message"}\n\n'
+            yield 'event: done\ndata: {}\n\n'
 
+        return StreamingResponse(_empty(), media_type="text/event-stream")
+
+    company_name = await _company_name(conn, company_id)
+    events = stream_chat(conn, company_id, company_name, message, history)
     return StreamingResponse(events, media_type="text/event-stream")

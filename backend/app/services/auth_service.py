@@ -45,6 +45,11 @@ def create_invite_token(company_id: UUID, invited_by: UUID, role: str = "member"
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
+def normalize_email(email: str) -> str:
+    """Emails are case-insensitive — store and look them up in a canonical
+    lowercased form so 'Rusokh@test.com' and 'rusokh@test.com' are the same."""
+    return email.strip().lower()
+
 async def register_company_and_user(
     conn: asyncpg.Connection, email: str, password: str, company_name: str
 ) -> dict:
@@ -55,14 +60,15 @@ async def register_company_and_user(
         user = await conn.fetchrow(
             """INSERT INTO users (company_id, email, hashed_password, role)
                VALUES ($1, $2, $3, 'owner') RETURNING id, company_id, role""",
-            company["id"], email, hash_password(password),
+            company["id"], normalize_email(email), hash_password(password),
         )
     return dict(user)
 
 async def authenticate_user(conn: asyncpg.Connection, email: str, password: str) -> dict | None:
+    # Case-insensitive lookup so existing mixed-case rows still authenticate.
     row = await conn.fetchrow(
-        "SELECT id, company_id, hashed_password, role FROM users WHERE email = $1 AND is_active = TRUE",
-        email,
+        "SELECT id, company_id, hashed_password, role FROM users WHERE LOWER(email) = $1 AND is_active = TRUE",
+        normalize_email(email),
     )
     if not row or not verify_password(password, row["hashed_password"]):
         return None

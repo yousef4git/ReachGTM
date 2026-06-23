@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import uuid
+
+import asyncpg
+
 from shared.schemas import ContentAsset, ContentGenerateRequest, ContentType
 
 
@@ -55,3 +59,68 @@ def generate_content_assets(body: ContentGenerateRequest) -> list[ContentAsset]:
             )
 
     return assets
+
+
+# ── DB persistence ──────────────────────────────────────────────────────────
+
+
+def _as_uuid(value) -> uuid.UUID:
+    return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))
+
+
+async def persist_content_assets(
+    conn: asyncpg.Connection,
+    company_id,
+    strategy_id,
+    assets: list[dict],
+) -> list[str]:
+    """Insert content assets (as plain dicts off the agent bundle) and return new ids."""
+    company_uuid = _as_uuid(company_id)
+    strategy_uuid = _as_uuid(strategy_id) if strategy_id else None
+    new_ids: list[str] = []
+
+    for asset in assets:
+        score = asset.get("brand_alignment_score")
+        new_id = await conn.fetchval(
+            """INSERT INTO content_assets
+               (company_id, strategy_id, content_type, title, body,
+                validation_status, brand_alignment_score)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               RETURNING id""",
+            company_uuid,
+            strategy_uuid,
+            str(asset.get("type") or "cold_email"),
+            str(asset.get("title") or "Untitled"),
+            str(asset.get("body") or ""),
+            str(asset.get("validation_status") or "pending"),
+            float(score) if score is not None else None,
+        )
+        new_ids.append(str(new_id))
+
+    return new_ids
+
+
+async def list_content(conn: asyncpg.Connection, company_id) -> list[dict]:
+    """Return the company's persisted content assets, newest first."""
+    rows = await conn.fetch(
+        """SELECT id, content_type, title, body, validation_status,
+                  brand_alignment_score, strategy_id, created_at
+           FROM content_assets
+           WHERE company_id = $1
+           ORDER BY created_at DESC""",
+        _as_uuid(company_id),
+    )
+    return [
+        {
+            "id": str(r["id"]),
+            "type": r["content_type"],
+            "title": r["title"],
+            "body": r["body"],
+            "target_icp": "",
+            "validation_status": r["validation_status"],
+            "brand_alignment_score": r["brand_alignment_score"],
+            "strategy_id": str(r["strategy_id"]) if r["strategy_id"] else None,
+            "created_at": r["created_at"].isoformat(),
+        }
+        for r in rows
+    ]

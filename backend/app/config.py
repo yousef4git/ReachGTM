@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     agents_url: str = "http://agents:8001"
+    # Model used by the grounded company chatbot (RAG over KB + strategy + memory).
+    chat_model: str = "gpt-5.4-mini"
     environment: str = "development"
 
 settings = Settings()

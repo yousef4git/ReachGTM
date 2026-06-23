@@ -19,7 +19,9 @@ def _build_token_response(user: dict) -> TokenResponse:
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest, conn: asyncpg.Connection = Depends(get_db)):
-    existing = await conn.fetchval("SELECT id FROM users WHERE email = $1", body.email)
+    existing = await conn.fetchval(
+        "SELECT id FROM users WHERE LOWER(email) = LOWER($1)", body.email
+    )
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     user = await auth_service.register_company_and_user(conn, body.email, body.password, body.company_name)

@@ -34,7 +34,9 @@ export default function ContentPage() {
   const contentAssets = useStore((s) => s.contentAssets);
   const removeContentAsset = useStore((s) => s.removeContentAsset);
 
-  const allAssets = assets ?? contentAssets;
+  // Prefer the backend list when it has data; otherwise fall back to locally
+  // generated assets (the backend list endpoint is still a stub returning []).
+  const allAssets = assets && assets.length > 0 ? assets : contentAssets;
 
   const filtered = useMemo(() => {
     if (activeTab === ALL_TAB) return allAssets;

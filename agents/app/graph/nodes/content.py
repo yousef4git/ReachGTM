@@ -127,7 +127,8 @@ def _build_llm_prompt(content_type: ContentType, context: str, index: int) -> li
             "- Hook: First line must stop the scroll (bold claim, question, contrarian take)\n"
             "- Body: 3-5 short paragraphs, one idea each\n"
             "- CTA: Ask for comment/share/DM — never 'link in bio'\n"
-            "- Tone: Professional but conversational"
+            "- Tone: Professional but conversational\n"
+            "Return ONLY the post text. Do not wrap in JSON or markdown code fences."
         ),
         ContentType.BLOG_OUTLINE: (
             f"Generate a blog outline (piece {index}). "
@@ -135,7 +136,8 @@ def _build_llm_prompt(content_type: ContentType, context: str, index: int) -> li
             "- Title (attention-grabbing, SEO-friendly)\n"
             "- 5-7 section headings with 2-3 bullet points per section\n"
             "- Suggested meta description (under 160 chars)\n"
-            "- Target keyword"
+            "- Target keyword\n"
+            "Return ONLY the outline as plain text/markdown. Do not wrap in JSON or code fences."
         ),
         ContentType.AD_COPY: (
             f"Generate ad copy (variant {index}). "
@@ -143,7 +145,8 @@ def _build_llm_prompt(content_type: ContentType, context: str, index: int) -> li
             "- Headline (under 30 chars)\n"
             "- Body (under 90 chars)\n"
             "- CTA text\n"
-            "- Value angle"
+            "- Value angle\n"
+            "Return ONLY the ad copy as plain text. Do not wrap in JSON or code fences."
         ),
     }
 
@@ -231,7 +234,11 @@ async def _generate_with_llm(
     if not settings.openai_api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
 
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=settings.openai_api_key)
+    llm = ChatOpenAI(
+        model=settings.content_model,
+        temperature=settings.content_temperature,
+        api_key=settings.openai_api_key,
+    )
     assets: list[ContentAsset] = []
     ctx_str = _ctx_formatted(ctx)
 

@@ -168,6 +168,7 @@ class AgentEventType(str, Enum):
     AGENT_PROGRESS = "agent_progress"
     AGENT_OUTPUT = "agent_output"
     AGENT_COMPLETE = "agent_complete"
+    PERSISTED = "persisted"  # emitted by the backend relay after the bundle is saved to DB
     ERROR = "error"
     DONE = "done"
 

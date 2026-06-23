@@ -68,6 +68,9 @@ async def stream_graph_events(state: GTMState) -> AsyncIterator[AgentEvent]:
     yield AgentEvent(event=AgentEventType.AGENT_START, message="Pipeline started")
 
     produced = {"research_report": False, "gtm_strategy": False, "content_assets": 0}
+    # The artifacts themselves — surfaced to the client so the UI renders the
+    # actual deliverable (strategy, content, research), not just progress ticks.
+    artifacts: dict = {"research_report": None, "gtm_strategy": None, "content_assets": []}
     try:
         async for chunk in graph.astream(state.model_dump(), stream_mode="updates"):
             # `updates` mode: {node_name: {changed state fields}}
@@ -79,27 +82,36 @@ async def stream_graph_events(state: GTMState) -> AsyncIterator[AgentEvent]:
                 )
                 if not delta:
                     continue
-                if delta.get("research_report") is not None and not produced["research_report"]:
-                    produced["research_report"] = True
-                    yield AgentEvent(
-                        event=AgentEventType.AGENT_OUTPUT,
-                        agent=node,
-                        message="Research report ready",
-                    )
-                if delta.get("gtm_strategy") is not None and not produced["gtm_strategy"]:
-                    produced["gtm_strategy"] = True
-                    yield AgentEvent(
-                        event=AgentEventType.AGENT_OUTPUT,
-                        agent=node,
-                        message="GTM strategy ready",
-                    )
+                if delta.get("research_report") is not None:
+                    artifacts["research_report"] = delta["research_report"]
+                    if not produced["research_report"]:
+                        produced["research_report"] = True
+                        yield AgentEvent(
+                            event=AgentEventType.AGENT_OUTPUT,
+                            agent=node,
+                            message="Research report ready",
+                            data=delta["research_report"],
+                        )
+                if delta.get("gtm_strategy") is not None:
+                    artifacts["gtm_strategy"] = delta["gtm_strategy"]
+                    if not produced["gtm_strategy"]:
+                        produced["gtm_strategy"] = True
+                        yield AgentEvent(
+                            event=AgentEventType.AGENT_OUTPUT,
+                            agent=node,
+                            message="GTM strategy ready",
+                            data=delta["gtm_strategy"],
+                        )
                 assets = delta.get("content_assets")
                 if assets:
+                    # brand_alignment refines the same list — keep the latest.
+                    artifacts["content_assets"] = assets
                     produced["content_assets"] = len(assets)
                     yield AgentEvent(
                         event=AgentEventType.AGENT_OUTPUT,
                         agent=node,
                         message=f"{len(assets)} content asset(s) ready",
+                        data=assets,
                     )
     except Exception as exc:  # noqa: BLE001 — surface any failure as an error event
         yield AgentEvent(
@@ -109,10 +121,19 @@ async def stream_graph_events(state: GTMState) -> AsyncIterator[AgentEvent]:
         yield AgentEvent(event=AgentEventType.DONE)
         return
 
+    # Final frame carries the complete, authoritative bundle in one place.
+    # `content_assets`/`gtm_strategy`/`research_report` are the actual artifacts
+    # (objects + list) the UI renders and the backend persists; per-artifact
+    # presence/counts live under `counts` to avoid shadowing the artifacts.
     yield AgentEvent(
         event=AgentEventType.AGENT_COMPLETE,
         message="Pipeline complete",
-        data=produced,
+        data={
+            "research_report": artifacts["research_report"],
+            "gtm_strategy": artifacts["gtm_strategy"],
+            "content_assets": artifacts["content_assets"],
+            "counts": produced,
+        },
     )
     yield AgentEvent(event=AgentEventType.DONE)
 

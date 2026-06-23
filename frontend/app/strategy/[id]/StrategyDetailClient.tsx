@@ -8,6 +8,11 @@ import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 export default function StrategyDetailClient({ id }: { id: string }) {
   const { data: strategy, isLoading, error } = useStrategy(id);
 
+  // GET /strategy/{id} returns the stored record; only a fully generated
+  // strategy carries these fields. Guard so a record without them degrades
+  // gracefully instead of crashing on undefined.replace()/.slice().
+  const hasContent = Boolean(strategy?.positioning_statement && strategy?.motion);
+
   return (
     <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
       <Link
@@ -45,7 +50,17 @@ export default function StrategyDetailClient({ id }: { id: string }) {
         </div>
       )}
 
-      {strategy && (
+      {strategy && !hasContent && (
+        <div className="alert items-center">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <p>
+            This strategy has no generated content yet. Run a generation from the
+            strategy generator to populate it.
+          </p>
+        </div>
+      )}
+
+      {strategy && hasContent && (
         <div className="space-y-5">
           <StrategyCard strategy={strategy} />
 

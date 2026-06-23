@@ -12,6 +12,7 @@ from backend.app.services.agent_stream import stream_strategy_events
 from backend.app.services.strategy_service import (
     create_strategy,
     get_strategy_by_id,
+    list_strategies,
 )
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
@@ -94,6 +95,23 @@ async def generate_strategy(
     )
 
     return strategy
+
+
+@router.get("/")
+async def list_strategies_endpoint(request: Request):
+    """List the company's persisted strategies, newest first.
+
+    Self-acquires a pooled connection so it degrades to [] without an
+    authenticated tenant or initialized pool (keeps the route unit-testable)."""
+    company_id = getattr(request.state, "company_id", None)
+    if not company_id:
+        return []
+    from backend.app.db.connection import get_pool, set_tenant
+
+    pool = get_pool()
+    async with pool.acquire() as conn:
+        await set_tenant(conn, company_id)
+        return await list_strategies(conn, company_id)
 
 
 @router.get("/{strategy_id}")

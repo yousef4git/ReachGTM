@@ -75,10 +75,14 @@ export const strategyApi = {
 };
 
 export const contentApi = {
+  // Backend wraps list/generate responses as { count, assets }. Unwrap to the
+  // array / shape the hooks and pages expect.
   list: () =>
-    api.get<ContentAsset[]>("/api/v1/content/").then((r) => r.data),
+    api.get<{ count: number; assets: ContentAsset[] }>("/api/v1/content/").then((r) => r.data.assets ?? []),
   generate: (body: { strategy_id?: string; content_types: string[]; count_per_type: number }) =>
-    api.post<{ content_assets: ContentAsset[]; session_id?: string }>("/api/v1/content/generate", body).then((r) => r.data),
+    api
+      .post<{ count: number; assets: ContentAsset[]; session_id?: string }>("/api/v1/content/generate", body)
+      .then((r) => ({ content_assets: r.data.assets ?? [], session_id: r.data.session_id })),
 };
 
 export const SSE_BASE_URL =
@@ -93,8 +97,9 @@ export const knowledgeApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }).then((r) => r.data);
   },
+  // Backend wraps the list response as { documents }. Unwrap to an array.
   list: () =>
-    api.get<KnowledgeDocument[]>("/api/v1/knowledge/").then((r) => r.data),
+    api.get<{ documents: KnowledgeDocument[] }>("/api/v1/knowledge/").then((r) => r.data.documents ?? []),
 };
 
 export default api;

@@ -1,0 +1,33 @@
+# Root build context is used by backend/ and agents/ images (context: ..).
+# Frontend has its own build (context: ../frontend) with frontend/.dockerignore,
+# so the entire frontend tree is dead weight here — exclude it.
+frontend
+
+# VCS / CI
+.git
+.gitignore
+.github
+
+# Python caches & virtualenvs
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+.venv
+venv
+env
+
+# Secrets & local env (provided at runtime via env_file, never baked into image)
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+
+# Docs & local tooling not needed in images
+docs
+infra/docker-compose*.yml

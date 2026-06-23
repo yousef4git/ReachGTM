@@ -2,6 +2,8 @@ services:
   backend:
     image: ${ECR_REGISTRY}/reachgtm-backend:${IMAGE_TAG}
     volumes: []
+    # Reset the base file's dev --reload command back to the production CMD.
+    command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     deploy:
       resources:
         limits:
@@ -17,6 +19,8 @@ services:
   agents:
     image: ${ECR_REGISTRY}/reachgtm-agents:${IMAGE_TAG}
     volumes: []
+    # Reset the base file's dev --reload command back to the production CMD.
+    command: ["uvicorn", "agents.app.main:app", "--host", "0.0.0.0", "--port", "8001"]
     deploy:
       resources:
         limits:
