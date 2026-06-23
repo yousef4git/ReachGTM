@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         {/* Distinctive type: Fraunces (editorial display) + Hanken Grotesk (UI)
             + JetBrains Mono (data). Loaded over the network so the static export

@@ -1,21 +1,15 @@
 "use client";
 
-import { useState, useCallback, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect, type FormEvent } from "react";
 import { useAgentStream } from "@/hooks/useAgentStream";
 import { useGenerateStrategy } from "@/hooks/useStrategy";
 import { AgentProgress } from "@/components/agent/AgentProgress";
 import { AgentEventFeed } from "@/components/agent/AgentEventFeed";
-import { StrategyCard } from "@/components/strategy/StrategyCard";
-import type { GTMStrategy } from "@/types";
+import { StrategyResult } from "@/components/strategy/StrategyResult";
+import { useStore } from "@/store/useStore";
+import type { StrategyBundle, GTMStrategy, ContentAsset, ResearchHighlights } from "@/types";
 import { cn } from "@/lib/utils";
-import {
-  ArrowRight,
-  Compass,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { Compass, Loader2, AlertCircle } from "lucide-react";
 
 type Stage = "seed" | "series_a" | "series_b" | "growth";
 
@@ -27,12 +21,13 @@ const STAGE_OPTIONS: { value: Stage; label: string }[] = [
 ];
 
 export default function NewStrategyPage() {
-  const router = useRouter();
-  const { events, isStreaming, error: streamError, start, stop } = useAgentStream();
+  const { events, error: streamError, start, stop } = useAgentStream();
   const { mutateAsync: generate, isPending: isGenerating } = useGenerateStrategy();
+  const setStrategy = useStore((s) => s.setStrategy);
+  const setContentAssets = useStore((s) => s.setContentAssets);
 
   const [phase, setPhase] = useState<"form" | "generating" | "result" | "error">("form");
-  const [result, setResult] = useState<GTMStrategy | null>(null);
+  const [bundle, setBundle] = useState<StrategyBundle | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Form state
@@ -76,44 +71,66 @@ export default function NewStrategyPage() {
     [name, website, industry, stage, description, foundedYear, generate, start]
   );
 
-  // Check if generation completed
-  const isDone = events.some((e) => e.event === "done");
+  // `agent_complete` is terminal: useAgentStream closes the EventSource on it,
+  // so the trailing `done` frame may never arrive — treat either as completion.
+  const isDone = events.some((e) => e.event === "done" || e.event === "agent_complete");
   const hasError = events.some((e) => e.event === "error");
 
-  // When done, try to extract the strategy result from events
-  if (isDone && phase === "generating") {
-    const outputEvent = events.find((e) => e.event === "agent_output" && e.agent === "strategy");
-    if (outputEvent?.data) {
-      setResult(outputEvent.data as GTMStrategy);
-      setPhase("result");
-    } else {
-      const doneEvent = events.find((e) => e.event === "done");
-      if (doneEvent?.data) {
-        setResult(doneEvent.data as GTMStrategy);
-        setPhase("result");
-      } else {
-        setPhase("result");
-      }
+  // On completion: assemble the deliverable bundle from the stream, push it into
+  // the shared store (so the Content library and dashboard see it), and switch
+  // to the result view.
+  useEffect(() => {
+    if (phase !== "generating") return;
+    if (hasError) {
+      setPhase("error");
+      return;
     }
-  }
+    if (!isDone) return;
 
-  if (hasError && phase === "generating") {
-    setPhase("error");
-  }
+    const complete = events.find((e) => e.event === "agent_complete")?.data as
+      | { gtm_strategy?: GTMStrategy; content_assets?: ContentAsset[]; research_report?: ResearchHighlights }
+      | undefined;
+
+    let next: StrategyBundle;
+    if (complete && (complete.gtm_strategy || complete.content_assets?.length)) {
+      next = {
+        gtm_strategy: complete.gtm_strategy ?? null,
+        content_assets: complete.content_assets ?? [],
+        research_report: complete.research_report ?? null,
+      };
+    } else {
+      // Fallback: stitch from individual agent_output frames.
+      const strat = (events.find((e) => e.event === "agent_output" && e.agent === "strategy")?.data ?? null) as GTMStrategy | null;
+      const contentFrames = events.filter((e) => e.event === "agent_output" && /content/.test(e.message ?? ""));
+      const assets = (contentFrames.at(-1)?.data ?? []) as ContentAsset[];
+      const research = (events.find((e) => e.event === "agent_output" && e.agent === "research")?.data ?? null) as ResearchHighlights | null;
+      next = { gtm_strategy: strat, content_assets: assets, research_report: research };
+    }
+
+    setBundle(next);
+    if (next.gtm_strategy) setStrategy(next.gtm_strategy);
+    if (next.content_assets.length) setContentAssets(next.content_assets);
+    setPhase("result");
+  }, [isDone, hasError, phase, events, setStrategy, setContentAssets]);
 
   return (
     <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
       {/* Header */}
-      <header className="animate-rise mb-10">
-        <p className="eyebrow">New strategy · Step 01</p>
-        <h1 className="display mt-3 text-[2.5rem] font-medium leading-tight text-ink">
-          Aim the agents.
-        </h1>
-        <p className="mt-2.5 max-w-xl text-[1rem] leading-relaxed text-ink-muted">
-          Describe your company. Four specialist agents will research, strategize,
-          and draft content — streaming their work live.
-        </p>
-      </header>
+      {phase !== "result" && (
+        <header className="animate-rise mb-10">
+          <p className="eyebrow">
+            New strategy · {phase === "generating" ? "Working" : "Step 01"}
+          </p>
+          <h1 className="display mt-3 text-[2.5rem] font-medium leading-tight text-ink">
+            {phase === "generating" ? "Agents on the case." : "Aim the agents."}
+          </h1>
+          <p className="mt-2.5 max-w-xl text-[1rem] leading-relaxed text-ink-muted">
+            {phase === "generating"
+              ? "Research, strategy, content, and brand alignment — streaming live below."
+              : "Describe your company. Four specialist agents will research, strategize, and draft content — streaming their work live."}
+          </p>
+        </header>
+      )}
 
       {/* Form Phase */}
       {phase === "form" && (
@@ -272,46 +289,24 @@ export default function NewStrategyPage() {
       )}
 
       {/* Result Phase */}
-      {phase === "result" && (
-        <div className="space-y-5">
-          <div className="alert alert-success items-center">
-            <CheckCircle className="h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-semibold">Strategy generated</p>
-              <p className="text-[0.8125rem] opacity-80">
-                4 agents ran in sequence · {events.length} events captured.
-              </p>
+      {phase === "result" && bundle && (
+        <div className="space-y-6">
+          <StrategyResult bundle={bundle} companyName={name || "Your company"} />
+
+          <details className="card group p-6 sm:p-7">
+            <summary className="flex cursor-pointer list-none items-center justify-between">
+              <h3 className="eyebrow">Event log</h3>
+              <span className="mono text-[0.6875rem] text-ink-faint group-open:hidden">
+                {events.length} events · show
+              </span>
+              <span className="mono hidden text-[0.6875rem] text-ink-faint group-open:inline">
+                hide
+              </span>
+            </summary>
+            <div className="mt-4">
+              <AgentEventFeed events={events} />
             </div>
-          </div>
-
-          {result ? (
-            <StrategyCard strategy={result} />
-          ) : (
-            <div className="rounded-xl border border-dashed border-hairline-strong bg-surface p-8 text-center text-[0.875rem] text-ink-faint">
-              Strategy data will appear here once the backend is wired.
-            </div>
-          )}
-
-          <div className="card p-6 sm:p-7">
-            <h3 className="eyebrow mb-3">Event log</h3>
-            <AgentEventFeed events={events} />
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push("/strategy/new")}
-              className="btn btn-secondary"
-            >
-              Generate another
-            </button>
-            <button
-              onClick={() => router.push("/content/create")}
-              className="btn btn-primary"
-            >
-              Create content assets
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+          </details>
         </div>
       )}
 
