@@ -33,7 +33,10 @@ export const useStore = create<AppStore>()(
       setKnowledgeDocs: (docs) => set({ knowledgeDocs: docs }),
       addKnowledgeDoc: (doc) =>
         set((state) => ({
-          knowledgeDocs: [...state.knowledgeDocs, doc],
+          knowledgeDocs: [
+            ...state.knowledgeDocs.filter((d) => d.id !== doc.id),
+            doc,
+          ],
         })),
     }),
     {

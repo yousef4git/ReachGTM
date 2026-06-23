@@ -49,7 +49,12 @@ export default function KnowledgePage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const allDocs = docs && docs.length > 0 ? docs : knowledgeDocs;
+  const source = docs && docs.length > 0 ? docs : knowledgeDocs;
+  // Dedupe by id — guards against duplicate React keys from previously
+  // persisted localStorage state that may contain repeated documents.
+  const allDocs = Array.from(
+    new Map(source.map((doc) => [doc.id, doc])).values()
+  );
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
