@@ -48,14 +48,20 @@ def _members():
     }
 
 
+def _company():
+    """Fresh company row each test so name/plan mutations don't leak."""
+    return {"id": COMPANY_ID, "name": "Acme Inc", "plan": "free"}
+
+
 class FakeConn:
     """Minimal asyncpg.Connection stand-in driven by the seeded member rows.
 
     Endpoints use plain `row["col"]` access which works against the dicts here.
     """
 
-    def __init__(self, members: dict):
+    def __init__(self, members: dict, company: dict | None = None):
         self.members = members
+        self.company = company if company is not None else _company()
 
     async def execute(self, query, *args):
         # Used by get_db for set_config and by the UPDATE path.
@@ -79,7 +85,28 @@ class FakeConn:
 
     async def fetchrow(self, query, *args):
         q = query.strip().upper()
-        if "RETURNING" in q:  # UPDATE ... RETURNING
+        if "COMPANIES" in q:
+            if q.startswith("UPDATE COMPANIES"):
+                # Partial UPDATE: company_id is always the last arg; the leading
+                # args are the SET values in (name, plan) order as built.
+                set_clause = q.split("SET", 1)[1].split("WHERE", 1)[0]
+                idx = 0
+                if "NAME =" in set_clause:
+                    self.company["name"] = args[idx]
+                    idx += 1
+                if "PLAN =" in set_clause:
+                    self.company["plan"] = args[idx]
+                    idx += 1
+                company_id = args[-1]
+                if str(self.company["id"]) != str(company_id):
+                    return None
+                return self.company
+            # SELECT id, name, plan FROM companies WHERE id = $1
+            (company_id,) = args
+            if str(self.company["id"]) != str(company_id):
+                return None
+            return self.company
+        if "RETURNING" in q:  # UPDATE users ... RETURNING
             new_role, user_id, company_id = args
             row = self.members.get(str(user_id))
             if row and str(row["company_id"]) == str(company_id):
@@ -91,23 +118,29 @@ class FakeConn:
         return self.members.get(str(user_id))
 
     async def fetchval(self, query, *args):
-        return None
+        # COUNT of active users in the company (seat usage).
+        (company_id,) = args
+        return sum(
+            1
+            for m in self.members.values()
+            if str(m["company_id"]) == str(company_id) and m["is_active"]
+        )
 
 
-def _make_app(members: dict) -> FastAPI:
+def _make_app(members: dict, company: dict | None = None) -> FastAPI:
     app = FastAPI()
     app.add_middleware(TenantMiddleware)
     app.include_router(team_api.router, prefix="/api/v1")
 
     async def _override_db():
-        yield FakeConn(members)
+        yield FakeConn(members, company)
 
     app.dependency_overrides[get_db] = _override_db
     return app
 
 
-def _client(members: dict) -> TestClient:
-    return TestClient(_make_app(members))
+def _client(members: dict, company: dict | None = None) -> TestClient:
+    return TestClient(_make_app(members, company))
 
 
 def _auth(user_id, role):
@@ -243,3 +276,110 @@ def test_cannot_change_own_role():
         headers=_auth(OWNER_ID, "owner"),
     )
     assert resp.status_code in (400, 403)
+
+
+# ── GET /team/settings ───────────────────────────────────────────────────────
+
+def test_settings_get_returns_plan_and_seats_for_owner():
+    members = _members()
+    resp = _client(members).get("/api/v1/team/settings", headers=_auth(OWNER_ID, "owner"))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["company_id"] == str(COMPANY_ID)
+    assert body["name"] == "Acme Inc"
+    assert body["plan"] == "free"
+    # 3 active members in COMPANY_ID (owner, admin, member); the stranger is in
+    # another company and must not be counted.
+    assert body["seat_count"] == 3
+    assert body["seat_limit"] == team_api.PLAN_SEAT_LIMITS["free"]
+
+
+def test_settings_get_allows_admin():
+    members = _members()
+    resp = _client(members).get("/api/v1/team/settings", headers=_auth(ADMIN_ID, "admin"))
+    assert resp.status_code == 200
+    assert resp.json()["plan"] == "free"
+
+
+def test_settings_get_forbidden_for_member():
+    members = _members()
+    resp = _client(members).get("/api/v1/team/settings", headers=_auth(MEMBER_ID, "member"))
+    assert resp.status_code == 403
+
+
+def test_settings_get_reflects_plan_seat_limit():
+    members = _members()
+    company = {"id": COMPANY_ID, "name": "Acme Inc", "plan": "pro"}
+    resp = _client(members, company).get("/api/v1/team/settings", headers=_auth(OWNER_ID, "owner"))
+    assert resp.status_code == 200
+    assert resp.json()["seat_limit"] == team_api.PLAN_SEAT_LIMITS["pro"]
+
+
+# ── PATCH /team/settings ─────────────────────────────────────────────────────
+
+def test_settings_patch_plan_updates_and_returns_new_limit():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={"plan": "pro"},
+        headers=_auth(OWNER_ID, "owner"),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["plan"] == "pro"
+    assert body["seat_limit"] == team_api.PLAN_SEAT_LIMITS["pro"]
+    assert body["seat_count"] == 3
+
+
+def test_settings_patch_name_renames_workspace():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={"name": "Globex"},
+        headers=_auth(OWNER_ID, "owner"),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Globex"
+    # plan unchanged
+    assert body["plan"] == "free"
+
+
+def test_settings_patch_forbidden_for_non_owner():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={"plan": "pro"},
+        headers=_auth(ADMIN_ID, "admin"),
+    )
+    assert resp.status_code == 403
+
+
+def test_settings_patch_invalid_plan_rejected():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={"plan": "unlimited"},
+        headers=_auth(OWNER_ID, "owner"),
+    )
+    assert resp.status_code == 400
+
+
+def test_settings_patch_blank_name_rejected():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={"name": "   "},
+        headers=_auth(OWNER_ID, "owner"),
+    )
+    assert resp.status_code == 400
+
+
+def test_settings_patch_empty_body_rejected():
+    members = _members()
+    resp = _client(members).patch(
+        "/api/v1/team/settings",
+        json={},
+        headers=_auth(OWNER_ID, "owner"),
+    )
+    assert resp.status_code == 400

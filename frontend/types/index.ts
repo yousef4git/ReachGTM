@@ -114,6 +114,18 @@ export interface TeamMember {
 // Roles assignable via the promote/demote endpoint ("owner" is not settable).
 export type AssignableRole = "member" | "admin";
 
+// Billing plans a workspace can be on (issue #31). Mirrors PLAN_SEAT_LIMITS in
+// backend/app/api/team.py. Real billing is not wired up — switching is free.
+export type WorkspacePlan = "free" | "pro" | "enterprise";
+
+export interface TeamSettings {
+  company_id: string;
+  name: string;
+  plan: WorkspacePlan;
+  seat_count: number;
+  seat_limit: number;
+}
+
 export interface KnowledgeDocument {
   id: string;
   filename: string;

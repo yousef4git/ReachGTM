@@ -10,6 +10,8 @@ import type {
   CreateInviteResponse,
   TeamMember,
   AssignableRole,
+  TeamSettings,
+  WorkspacePlan,
 } from "@/types";
 
 const api = axios.create({
@@ -57,6 +59,10 @@ export const teamApi = {
     api
       .patch<TeamMember>(`/api/v1/team/members/${userId}/role`, { role })
       .then((r) => r.data),
+  getSettings: () =>
+    api.get<TeamSettings>("/api/v1/team/settings").then((r) => r.data),
+  updateSettings: (body: { name?: string; plan?: WorkspacePlan }) =>
+    api.patch<TeamSettings>("/api/v1/team/settings", body).then((r) => r.data),
 };
 
 export const strategyApi = {
