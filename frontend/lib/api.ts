@@ -27,13 +27,50 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Single-flight refresh: on a 401, try to mint a new access token from the
+// refresh token once, retry the original request, and only bounce to /login if
+// the refresh itself fails. Prevents a stampede of refresh calls and the abrupt
+// "logged out mid-session" UX when a short-lived access token expires.
+let refreshing: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const rt = typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
+  if (!rt) return null;
+  try {
+    const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const res = await axios.post(`${base}/api/v1/auth/refresh`, { refresh_token: rt });
+    const { access_token, refresh_token } = res.data as TokenResponse;
+    localStorage.setItem("access_token", access_token);
+    if (refresh_token) localStorage.setItem("refresh_token", refresh_token);
+    return access_token;
+  } catch {
+    return null;
+  }
+}
+
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const original = error.config;
+    const status = error.response?.status;
+    const isAuthCall = typeof original?.url === "string" && original.url.includes("/auth/");
+
+    if (status === 401 && original && !original._retry && !isAuthCall) {
+      original._retry = true;
+      refreshing = refreshing ?? refreshAccessToken();
+      const newToken = await refreshing;
+      refreshing = null;
+      if (newToken) {
+        original.headers = original.headers ?? {};
+        original.headers.Authorization = `Bearer ${newToken}`;
+        return api(original);
+      }
+    }
+
+    if (status === 401) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      window.location.href = "/login";
+      if (typeof window !== "undefined") window.location.href = "/login";
     }
     return Promise.reject(error);
   }
