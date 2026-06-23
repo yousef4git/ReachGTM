@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Navbar } from "./Navbar";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { ChatLauncher } from "@/components/chat/ChatLauncher";
 
 const PUBLIC_PREFIXES = ["/login", "/register"];
 
@@ -20,6 +21,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     <>
       {!publicRoute && <Navbar />}
       <AuthGuard>{children}</AuthGuard>
+      {/* App-wide grounded chatbot — reachable from every authenticated page. */}
+      {!publicRoute && <ChatLauncher />}
     </>
   );
 }
