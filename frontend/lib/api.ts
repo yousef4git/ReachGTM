@@ -1,5 +1,14 @@
 import axios from "axios";
-import type { TokenResponse, LoginRequest, RegisterRequest, ContentAsset, KnowledgeDocument } from "@/types";
+import type {
+  TokenResponse,
+  LoginRequest,
+  RegisterRequest,
+  ContentAsset,
+  KnowledgeDocument,
+  AcceptInviteRequest,
+  CreateInviteRequest,
+  CreateInviteResponse,
+} from "@/types";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000",
@@ -33,6 +42,13 @@ export const authApi = {
     api.post<TokenResponse>("/api/v1/auth/register", body).then((r) => r.data),
   refresh: (refresh_token: string) =>
     api.post<TokenResponse>("/api/v1/auth/refresh", { refresh_token }).then((r) => r.data),
+  acceptInvite: (body: AcceptInviteRequest) =>
+    api.post<TokenResponse>("/api/v1/auth/accept-invite", body).then((r) => r.data),
+};
+
+export const teamApi = {
+  createInvite: (body: CreateInviteRequest) =>
+    api.post<CreateInviteResponse>("/api/v1/auth/invite", body).then((r) => r.data),
 };
 
 export const strategyApi = {

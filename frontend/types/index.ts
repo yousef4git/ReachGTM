@@ -86,6 +86,23 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface AcceptInviteRequest {
+  invite_token: string;
+  password: string;
+  email: string;
+}
+
+export type TeamRole = "owner" | "admin" | "member";
+
+export interface CreateInviteRequest {
+  role: TeamRole;
+}
+
+export interface CreateInviteResponse {
+  invite_token: string;
+  invite_url: string;
+}
+
 export interface KnowledgeDocument {
   id: string;
   filename: string;
