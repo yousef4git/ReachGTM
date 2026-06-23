@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, type FormEvent } from "react";
 import { knowledgeApi } from "@/lib/api";
-import { useStore } from "@/store/useStore";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Upload,
@@ -36,10 +35,8 @@ function useKnowledgeList() {
 }
 
 export default function KnowledgePage() {
-  const addKnowledgeDoc = useStore((s) => s.addKnowledgeDoc);
   const queryClient = useQueryClient();
   const { data: docs, isLoading } = useKnowledgeList();
-  const knowledgeDocs = useStore((s) => s.knowledgeDocs);
 
   const [file, setFile] = useState<File | null>(null);
   const [docType, setDocType] = useState(DOC_TYPE_OPTIONS[0].value);
@@ -49,11 +46,13 @@ export default function KnowledgePage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const source = docs && docs.length > 0 ? docs : knowledgeDocs;
-  // Dedupe by id — guards against duplicate React keys from previously
-  // persisted localStorage state that may contain repeated documents.
+  // The server knowledge list is the single source of truth. We deliberately do
+  // NOT fall back to the persisted localStorage store: after a cold run the DB
+  // is empty, and stale/malformed local entries would otherwise render as
+  // phantom documents (blank filename, "Invalid Date"). Dedupe by id as a
+  // defensive guard against duplicate React keys.
   const allDocs = Array.from(
-    new Map(source.map((doc) => [doc.id, doc])).values()
+    new Map((docs ?? []).map((doc) => [doc.id, doc])).values()
   );
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -80,11 +79,10 @@ export default function KnowledgePage() {
       setUploadSuccess(null);
 
       try {
-        const result = await knowledgeApi.upload(file, docType);
-        addKnowledgeDoc(result);
+        await knowledgeApi.upload(file, docType);
         // The server list is authoritative; refetch so the indexed doc shows
         // its full shape (id, created_at, …) rather than the upload response.
-        queryClient.invalidateQueries({ queryKey: ["knowledge"] });
+        await queryClient.invalidateQueries({ queryKey: ["knowledge"] });
         setUploadSuccess(`${file.name} uploaded and indexed.`);
         setFile(null);
         if (inputRef.current) inputRef.current.value = "";
@@ -94,7 +92,7 @@ export default function KnowledgePage() {
         setUploading(false);
       }
     },
-    [file, docType, addKnowledgeDoc, queryClient]
+    [file, docType, queryClient]
   );
 
   return (
