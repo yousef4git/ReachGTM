@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, type FormEvent } from "react";
 import { knowledgeApi } from "@/lib/api";
 import { useStore } from "@/store/useStore";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Upload,
   FileText,
@@ -37,6 +37,7 @@ function useKnowledgeList() {
 
 export default function KnowledgePage() {
   const addKnowledgeDoc = useStore((s) => s.addKnowledgeDoc);
+  const queryClient = useQueryClient();
   const { data: docs, isLoading } = useKnowledgeList();
   const knowledgeDocs = useStore((s) => s.knowledgeDocs);
 
@@ -76,6 +77,9 @@ export default function KnowledgePage() {
       try {
         const result = await knowledgeApi.upload(file, docType);
         addKnowledgeDoc(result);
+        // The server list is authoritative; refetch so the indexed doc shows
+        // its full shape (id, created_at, …) rather than the upload response.
+        queryClient.invalidateQueries({ queryKey: ["knowledge"] });
         setUploadSuccess(`${file.name} uploaded and indexed.`);
         setFile(null);
         if (inputRef.current) inputRef.current.value = "";
@@ -85,7 +89,7 @@ export default function KnowledgePage() {
         setUploading(false);
       }
     },
-    [file, docType, addKnowledgeDoc]
+    [file, docType, addKnowledgeDoc, queryClient]
   );
 
   return (
