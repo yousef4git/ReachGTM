@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, status
+from fastapi.responses import JSONResponse, StreamingResponse
+from jose import jwt, JWTError
 from pydantic import BaseModel
 import uuid
 import asyncpg
 
 from shared.schemas import StrategyGenerateRequest
+from backend.app.config import settings
 from backend.app.db.connection import get_db
 from backend.app.services.agent_stream import stream_strategy_events
 from backend.app.services.strategy_service import (
@@ -38,6 +40,41 @@ async def generate_strategy_stream(body: StrategyStreamRequest, request: Request
         goal=body.goal,
         content_types=body.content_types,
         count_per_type=body.count_per_type,
+    )
+    return StreamingResponse(events, media_type="text/event-stream")
+
+
+@router.get("/generate/stream")
+async def generate_strategy_stream_get(
+    token: str = "",
+    goal: str = "",
+    session_id: str | None = None,
+    content_types: str | None = None,
+    count_per_type: int = 3,
+):
+    """GET variant of the SSE stream for the browser EventSource API.
+
+    EventSource is GET-only and cannot set an Authorization header, so the JWT
+    arrives as a ?token= query param and is decoded here (TenantMiddleware lets
+    this route through via SELF_AUTH_ROUTES). content_types is a comma-separated
+    list because query params can't carry a JSON array.
+    """
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+    except JWTError:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid token"})
+
+    company_id = payload.get("company_id")
+    if not company_id:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid token"})
+
+    types_list = [t for t in content_types.split(",") if t] if content_types else None
+    events = stream_strategy_events(
+        company_id=company_id,
+        user_id=payload.get("sub"),
+        goal=goal,
+        content_types=types_list,
+        count_per_type=count_per_type,
     )
     return StreamingResponse(events, media_type="text/event-stream")
 
