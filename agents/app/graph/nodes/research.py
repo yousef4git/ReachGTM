@@ -34,6 +34,33 @@ _RESEARCH_SYSTEM_PROMPT = (
 )
 
 
+async def _kb_context(state: GTMState, goal: str) -> str:
+    """Retrieve the company's own uploaded knowledge (sales decks, product docs,
+    competitive intel) and format it for the research prompt. No-op (returns "")
+    when no retriever is registered or the KB is empty, so the offline/stub path
+    is unaffected. This grounds the whole downstream pipeline in company docs.
+    """
+    try:
+        from agents.app.tools.retriever_registry import get_retriever
+
+        retriever = get_retriever()
+        if retriever is None:
+            return ""
+        chunks = await retriever.retrieve(
+            query=goal, namespace=str(state.company_id), top_k=6
+        )
+        if not chunks:
+            return ""
+        joined = "\n\n".join(f"- {c['content'][:600]}" for c in chunks)
+        return (
+            "\n\nCompany knowledge base (the company's OWN uploaded docs — treat as "
+            "authoritative for product, ICP, positioning, and competitors; prefer these "
+            "over generic web results when they conflict):\n" + joined
+        )
+    except Exception:  # noqa: BLE001 — KB grounding is best-effort, never breaks research
+        return ""
+
+
 async def _generate_report_llm(state: GTMState, goal: str) -> ResearchReport | None:
     """Generate a real, structured ResearchReport with gpt-4o-mini.
 
@@ -77,9 +104,12 @@ async def _generate_report_llm(state: GTMState, goal: str) -> ResearchReport | N
         else:
             web_block = ""
 
+        # Ground in the company's own uploaded knowledge base (no-op when empty).
+        kb_block = await _kb_context(state, goal)
+
         human = (
             f"GTM goal:\n{goal}\n\nKnown company context:\n{context}"
-            f"{web_block}\n\nProduce the research report now."
+            f"{kb_block}{web_block}\n\nProduce the research report now."
         )
 
         report = await llm.ainvoke(

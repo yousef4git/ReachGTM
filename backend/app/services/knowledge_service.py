@@ -64,20 +64,24 @@ def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OV
     and hurt retrieval precision.
     """
     raw_paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-    paragraphs: list[str] = []
-    for para in raw_paragraphs:
-        words = para.split()
-        if len(words) <= chunk_size:
-            paragraphs.append(para)
-        else:
-            for i in range(0, len(words), chunk_size):
-                paragraphs.append(" ".join(words[i : i + chunk_size]))
-
+    stride = max(1, chunk_size - overlap)
     chunks: list[str] = []
     current_words: list[str] = []
 
-    for para in paragraphs:
+    for para in raw_paragraphs:
         words = para.split()
+        # A paragraph longer than the target is emitted as strict sliding windows
+        # (each <= chunk_size), bypassing the packing buffer so the overlap carry
+        # can't push a window over the cap.
+        if len(words) > chunk_size:
+            if current_words:
+                chunks.append(" ".join(current_words))
+                current_words = []
+            for i in range(0, len(words), stride):
+                chunks.append(" ".join(words[i : i + chunk_size]))
+                if i + chunk_size >= len(words):
+                    break
+            continue
         if current_words and len(current_words) + len(words) > chunk_size:
             chunks.append(" ".join(current_words))
             current_words = current_words[-overlap:] if overlap else []
