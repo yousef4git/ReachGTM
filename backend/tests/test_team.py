@@ -5,7 +5,6 @@ endpoints run without a real database. Deterministic.
 """
 import uuid
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
