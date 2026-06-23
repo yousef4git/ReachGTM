@@ -139,10 +139,20 @@ async def ingest_document(
                 len(chunks), doc_id,
             )
 
-        return {"document_id": str(doc_id), "chunks": len(chunks), "status": "indexed"}
+        return await _fetch_document(conn, doc_id)
 
     except Exception as exc:
         await conn.execute(
             "UPDATE knowledge_documents SET status='failed' WHERE id=$1", doc_id
         )
         raise exc
+
+
+async def _fetch_document(conn: asyncpg.Connection, doc_id: uuid.UUID) -> dict:
+    """Return a document in the same shape as the list endpoint / frontend type."""
+    row = await conn.fetchrow(
+        """SELECT id, filename, doc_type, status, chunk_count, created_at
+           FROM knowledge_documents WHERE id = $1""",
+        doc_id,
+    )
+    return dict(row)
