@@ -52,6 +52,18 @@ def _approve_asset(asset: ContentAsset, score: float) -> ContentAsset:
 
 async def brand_alignment_node(state: GTMState, retriever=None) -> GTMState:
     """Validate and revise content assets against brand knowledge chunks."""
+    if retriever is None:
+        # Lazily resolve the process-global retriever registered by the agents
+        # lifespan so content validation is grounded in the company's real KB.
+        # Degrade gracefully (retriever stays None → neutral score) if the
+        # registry/retriever is unavailable, e.g. offline tests with no API key.
+        try:
+            from agents.app.tools.retriever_registry import get_retriever
+
+            retriever = get_retriever()
+        except Exception:  # noqa: BLE001 — never let retriever wiring break the graph
+            retriever = None
+
     validated_assets: list[ContentAsset] = []
 
     for asset in state.content_assets:

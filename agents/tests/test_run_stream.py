@@ -58,9 +58,11 @@ async def test_stream_reports_progress_and_outputs(offline):
     progress_agents = [e.agent for e in events if e.event == AgentEventType.AGENT_PROGRESS]
     assert "brand_alignment" in progress_agents
 
-    # completion summary reflects produced artifacts
+    # completion frame carries the actual artifacts (content_assets is the list);
+    # per-artifact counts live under `counts`.
     complete = next(e for e in events if e.event == AgentEventType.AGENT_COMPLETE)
-    assert complete.data["content_assets"] >= 1
+    assert len(complete.data["content_assets"]) >= 1
+    assert complete.data["counts"]["content_assets"] >= 1
 
 
 def test_format_sse_frame_shape():

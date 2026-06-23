@@ -12,7 +12,25 @@ os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from agents.app.graph.graph import graph  # noqa: F401 — validate graph compiles
-    yield
+
+    # Build the RAG retriever (asyncpg pool over the knowledge store) and register
+    # it so graph nodes can ground their work in the company's knowledge base.
+    pool = None
+    try:
+        import asyncpg
+        from agents.app.tools.retriever import PgVectorRetriever
+        from agents.app.tools.retriever_registry import set_retriever
+
+        pool = await asyncpg.create_pool(dsn=settings.database_url, min_size=1, max_size=5)
+        set_retriever(PgVectorRetriever(pool))
+    except Exception as exc:  # noqa: BLE001 — degrade gracefully if DB is unreachable
+        print(f"[agents] retriever init skipped: {type(exc).__name__}: {exc}")
+
+    try:
+        yield
+    finally:
+        if pool is not None:
+            await pool.close()
 
 app = FastAPI(title="ReachGTM Agents", version="0.1.0", lifespan=lifespan)
 

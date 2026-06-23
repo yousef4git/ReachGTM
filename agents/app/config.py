@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     langsmith_api_key: str = ""
     langsmith_project: str = "reachgtm"
 
+    # Model + sampling for LLM-generated marketing content. Temperature is high
+    # (creative copy); kept in config so the model isn't hardcoded in node logic.
+    content_model: str = "gpt-4o-mini"
+    content_temperature: float = 0.7
+
     perplexity_api_key: str = ""
 
     # Serper.dev — Google Search API used to ground the research agent in live web
