@@ -42,10 +42,19 @@ export const useStore = create<AppStore>()(
     {
       name: "reachgtm-store",
       storage: createJSONStorage(() => localStorage),
+      // The knowledge list now has a real backend endpoint and is the single
+      // source of truth, so knowledgeDocs is intentionally NOT persisted —
+      // stale local entries were surfacing as phantom docs after a cold run.
+      version: 1,
+      migrate: (persisted) => {
+        if (persisted && typeof persisted === "object") {
+          delete (persisted as { knowledgeDocs?: unknown }).knowledgeDocs;
+        }
+        return persisted as AppStore;
+      },
       partialize: (state) => ({
         currentStrategy: state.currentStrategy,
         contentAssets: state.contentAssets,
-        knowledgeDocs: state.knowledgeDocs,
       }),
     }
   )
