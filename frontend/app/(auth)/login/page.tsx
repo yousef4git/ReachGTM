@@ -29,7 +29,10 @@ export default function LoginPage() {
       footer={
         <>
           New to ReachGTM?{" "}
-          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700">
+          <Link
+            href="/register"
+            className="font-semibold text-flare-700 underline-offset-2 hover:underline"
+          >
             Create an account
           </Link>
         </>
@@ -37,29 +40,49 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <div className="alert alert-danger">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="field-label">Email</label>
+          <label htmlFor="email" className="field-label">
+            Email
+          </label>
           <input
-            id="email" type="email" required autoComplete="email" placeholder="you@company.com"
-            value={email} onChange={(e) => setEmail(e.target.value)} className="field"
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="field"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="field-label">Password</label>
+          <label htmlFor="password" className="field-label">
+            Password
+          </label>
           <input
-            id="password" type="password" required autoComplete="current-password" placeholder="••••••••"
-            value={password} onChange={(e) => setPassword(e.target.value)} className="field"
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="field"
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn btn-primary mt-1 w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn btn-primary mt-1 w-full py-3"
+        >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />

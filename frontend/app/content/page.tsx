@@ -6,7 +6,16 @@ import { ContentCard } from "@/components/content/ContentCard";
 import { useContentList } from "@/hooks/useContent";
 import { useStore } from "@/store/useStore";
 import { ContentType } from "@/types";
-import { Plus, FileText, MessageCircle, Newspaper, Megaphone, Loader2, AlertCircle, Layers } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  MessageCircle,
+  Newspaper,
+  Megaphone,
+  Loader2,
+  AlertCircle,
+  Layers,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ALL_TAB = "all";
@@ -25,7 +34,6 @@ export default function ContentPage() {
   const contentAssets = useStore((s) => s.contentAssets);
   const removeContentAsset = useStore((s) => s.removeContentAsset);
 
-  // Use server data if available, fall back to local store
   const allAssets = assets ?? contentAssets;
 
   const filtered = useMemo(() => {
@@ -33,109 +41,114 @@ export default function ContentPage() {
     return allAssets.filter((a) => a.type === activeTab);
   }, [allAssets, activeTab]);
 
-  const handleDelete = (id: string) => {
-    removeContentAsset(id);
-  };
+  const handleDelete = (id: string) => removeContentAsset(id);
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Content Library</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Browse, review, and manage your generated content assets.
-            </p>
-          </div>
-          <Link
-            href="/content/create"
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Create Content
-          </Link>
+    <main className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+      {/* Header */}
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <div className="animate-rise">
+          <p className="eyebrow">Library</p>
+          <h1 className="display mt-2.5 text-[2.5rem] font-medium leading-tight text-ink">
+            Content
+          </h1>
+          <p className="mt-2 text-[0.9375rem] text-ink-muted">
+            Browse, review, and manage every generated asset.
+          </p>
         </div>
+        <Link href="/content/create" className="btn btn-flare">
+          <Plus className="h-4 w-4" />
+          Create content
+        </Link>
+      </div>
 
-        {/* Filter Tabs */}
-        <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-xl border bg-white p-1.5 shadow-sm">
-          {TABS.map((tab) => (
+      {/* Filter Tabs */}
+      <div className="mb-7 flex gap-1 overflow-x-auto rounded-xl border border-hairline bg-surface p-1.5 shadow-sm">
+        {TABS.map((tab) => {
+          const active = activeTab === tab.value;
+          const count = tab.value === ALL_TAB
+            ? allAssets.length
+            : allAssets.filter((a) => a.type === tab.value).length;
+          return (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                activeTab === tab.value
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                "flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[0.8125rem] font-semibold transition-colors",
+                active
+                  ? "bg-ink text-canvas"
+                  : "text-ink-muted hover:bg-sunken hover:text-ink"
               )}
             >
               {tab.icon}
               {tab.label}
-              {activeTab === tab.value && (
-                <span className="ml-1 rounded-full bg-blue-200 px-1.5 py-0.5 text-xs text-blue-700">
-                  {activeTab === ALL_TAB ? allAssets.length : filtered.length}
-                </span>
-              )}
+              <span
+                className={cn(
+                  "mono rounded-full px-1.5 text-[0.625rem]",
+                  active ? "bg-white/15 text-canvas" : "text-ink-faint"
+                )}
+              >
+                {count}
+              </span>
             </button>
+          );
+        })}
+      </div>
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-6 w-6 animate-spin text-flare-600" />
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="alert alert-danger mb-6">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold">Could not load content</p>
+            <p className="opacity-80">
+              {error instanceof Error
+                ? error.message
+                : "Backend may be offline. Showing local assets."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && filtered.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-hairline-strong bg-surface p-14 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sunken text-ink-faint">
+            <FileText className="h-6 w-6" />
+          </span>
+          <h3 className="mt-4 text-[1.0625rem] font-semibold text-ink">
+            {activeTab === ALL_TAB ? "No content yet" : "Nothing of this type"}
+          </h3>
+          <p className="mx-auto mt-1.5 max-w-sm text-[0.875rem] text-ink-muted">
+            {activeTab === ALL_TAB
+              ? "Generate your first content asset to get started."
+              : "Switch tabs, or generate content of this type."}
+          </p>
+          <Link
+            href="/content/create"
+            className="btn btn-primary mx-auto mt-6"
+          >
+            <Plus className="h-4 w-4" />
+            Create content
+          </Link>
+        </div>
+      )}
+
+      {/* Content Grid */}
+      {filtered.length > 0 && (
+        <div className="stagger grid gap-4 sm:grid-cols-2">
+          {filtered.map((asset) => (
+            <ContentCard key={asset.id} asset={asset} onDelete={handleDelete} />
           ))}
         </div>
-
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-            <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
-            <div>
-              <p className="text-sm font-medium text-red-800">Could not load content</p>
-              <p className="text-sm text-red-600">
-                {error instanceof Error ? error.message : "Backend may be offline. Showing local assets."}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && !error && filtered.length === 0 && (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
-            <FileText className="mx-auto mb-4 h-10 w-10 text-gray-300" />
-            <h3 className="mb-1 text-lg font-semibold text-gray-900">
-              {activeTab === ALL_TAB ? "No content yet" : "No content of this type"}
-            </h3>
-            <p className="mb-6 text-sm text-gray-500">
-              {activeTab === ALL_TAB
-                ? "Generate your first content asset to get started."
-                : "Switch to a different tab or generate content of this type."}
-            </p>
-            <Link
-              href="/content/create"
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              Create Content
-            </Link>
-          </div>
-        )}
-
-        {/* Content Grid */}
-        {filtered.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {filtered.map((asset) => (
-              <ContentCard
-                key={asset.id}
-                asset={asset}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </main>
   );
 }

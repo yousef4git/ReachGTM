@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, Users } from "lucide-react";
+import { Check, Copy, Users, RefreshCw, AlertCircle } from "lucide-react";
 import { teamApi } from "@/lib/api";
 import { getRole, getUserId } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import type {
   AssignableRole,
   TeamMember,
@@ -12,10 +13,8 @@ import type {
   WorkspacePlan,
 } from "@/types";
 
-// Roles an owner/admin is allowed to invite as.
 const INVITABLE_ROLES: TeamRole[] = ["member", "admin"];
 
-// Selectable plans. Mirrors PLAN_SEAT_LIMITS in backend/app/api/team.py.
 const PLANS: { value: WorkspacePlan; label: string }[] = [
   { value: "free", label: "Free" },
   { value: "pro", label: "Pro" },
@@ -23,7 +22,6 @@ const PLANS: { value: WorkspacePlan; label: string }[] = [
 ];
 
 export default function TeamPage() {
-  // null = not yet resolved (avoids hydration mismatch since role comes from localStorage)
   const [role, setRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [resolved, setResolved] = useState(false);
@@ -34,13 +32,11 @@ export default function TeamPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Members table state.
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
-  // Workspace settings state (issue #31).
   const [settings, setSettings] = useState<TeamSettings | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -82,7 +78,6 @@ export default function TeamPage() {
     setResolved(true);
   }, []);
 
-  // Owners and admins can view the members list and workspace settings.
   useEffect(() => {
     if (resolved && canInvite) {
       void loadMembers();
@@ -134,8 +129,6 @@ export default function TeamPage() {
     }
   }
 
-  // Build the absolute invite URL the teammate will open. The backend returns a
-  // relative path (/register?invite=...); prefix it with the current origin.
   function toAbsoluteUrl(path: string): string {
     if (typeof window === "undefined") return path;
     return `${window.location.origin}${path}`;
@@ -163,55 +156,66 @@ export default function TeamPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard may be unavailable (e.g. insecure context); ignore silently.
+      // ignore
     }
   }
 
   if (!resolved) {
     return (
-      <main className="p-8">
-        <p className="text-sm text-gray-500">Loading...</p>
+      <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+        <div className="skeleton h-8 w-40" />
+        <div className="skeleton mt-6 h-40 w-full" />
       </main>
     );
   }
 
   if (!canInvite) {
     return (
-      <main className="mx-auto max-w-3xl p-8">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-          <Users className="h-6 w-6" /> Team
+      <main className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+        <p className="eyebrow">Workspace</p>
+        <h1 className="display mt-2.5 text-[2.5rem] font-medium leading-tight text-ink">
+          Team
         </h1>
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
-          <p className="text-sm font-medium text-amber-800">You don&apos;t have access</p>
-          <p className="mt-1 text-sm text-amber-700">
-            Only workspace owners and admins can invite teammates. Ask an admin if you need access.
-          </p>
+        <div className="alert alert-warn mt-7">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold">You don&apos;t have access</p>
+            <p className="opacity-80">
+              Only workspace owners and admins can manage teammates. Ask an admin
+              if you need access.
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-        <Users className="h-6 w-6" /> Team
-      </h1>
-      <p className="mt-1 text-sm text-gray-500">Invite teammates to your ReachGTM workspace.</p>
+    <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
+      <header className="animate-rise mb-9">
+        <p className="eyebrow">Workspace</p>
+        <h1 className="display mt-2.5 text-[2.5rem] font-medium leading-tight text-ink">
+          Team
+        </h1>
+        <p className="mt-2 text-[0.9375rem] text-ink-muted">
+          Invite teammates and manage your ReachGTM workspace.
+        </p>
+      </header>
 
       {/* Invite a teammate */}
-      <section className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Invite a teammate</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Choose a role and generate a one-time invite link to share.
+      <section className="card p-6 sm:p-7">
+        <h2 className="text-[0.9375rem] font-semibold text-ink">Invite a teammate</h2>
+        <p className="mt-1 text-[0.8125rem] text-ink-muted">
+          Pick a role and generate a one-time invite link to share.
         </p>
 
-        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="sm:w-48">
-            <label className="block text-sm font-medium text-gray-700">Role</label>
+            <label className="field-label">Role</label>
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value as TeamRole)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm capitalize focus:border-blue-500 focus:outline-none"
+              className="field capitalize"
             >
               {INVITABLE_ROLES.map((r) => (
                 <option key={r} value={r} className="capitalize">
@@ -224,47 +228,52 @@ export default function TeamPage() {
             type="button"
             onClick={handleGenerate}
             disabled={loading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            className="btn btn-flare"
           >
-            {loading ? "Generating..." : "Generate invite link"}
+            {loading ? "Generating…" : "Generate invite link"}
           </button>
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-[0.8125rem] font-medium text-danger">{error}</p>}
 
         {inviteUrl && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">Invite link</label>
-            <div className="mt-1 flex items-center gap-2">
+          <div className="mt-5">
+            <label className="field-label">Invite link</label>
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 readOnly
                 value={inviteUrl}
                 onFocus={(e) => e.currentTarget.select()}
-                className="w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:outline-none"
+                className="field mono bg-sunken text-[0.8125rem]"
               />
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="btn btn-secondary shrink-0"
               >
-                {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-success" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              Share this link with your teammate. They&apos;ll set their email and password to join.
+            <p className="mt-2 text-[0.75rem] text-ink-faint">
+              Share this link with your teammate. They&apos;ll set their email and
+              password to join.
             </p>
           </div>
         )}
       </section>
 
       {/* Members */}
-      <section className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+      <section className="card mt-5 p-6 sm:p-7">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Members</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-[0.9375rem] font-semibold text-ink">Members</h2>
+            <p className="mt-1 text-[0.8125rem] text-ink-muted">
               {isOwner
                 ? "Promote or demote teammates between member and admin."
                 : "Everyone in your workspace."}
@@ -274,28 +283,33 @@ export default function TeamPage() {
             type="button"
             onClick={() => void loadMembers()}
             disabled={membersLoading}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="btn btn-ghost px-2.5"
+            aria-label="Refresh members"
           >
-            {membersLoading ? "Refreshing..." : "Refresh"}
+            <RefreshCw className={cn("h-4 w-4", membersLoading && "animate-spin")} />
           </button>
         </div>
 
-        {membersError && <p className="mt-3 text-sm text-red-600">{membersError}</p>}
+        {membersError && (
+          <p className="mt-3 text-[0.8125rem] font-medium text-danger">{membersError}</p>
+        )}
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full text-left text-[0.875rem]">
             <thead>
-              <tr className="border-b text-xs uppercase tracking-wide text-gray-500">
-                <th className="py-2 pr-4 font-medium">Email</th>
-                <th className="py-2 pr-4 font-medium">Role</th>
-                <th className="py-2 pr-4 font-medium">Status</th>
-                {isOwner && <th className="py-2 font-medium text-right">Actions</th>}
+              <tr className="border-b border-hairline">
+                <th className="eyebrow pb-2.5 pr-4 font-medium">Email</th>
+                <th className="eyebrow pb-2.5 pr-4 font-medium">Role</th>
+                <th className="eyebrow pb-2.5 pr-4 font-medium">Status</th>
+                {isOwner && (
+                  <th className="eyebrow pb-2.5 text-right font-medium">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {members.length === 0 && !membersLoading && (
                 <tr>
-                  <td colSpan={isOwner ? 4 : 3} className="py-4 text-sm text-gray-500">
+                  <td colSpan={isOwner ? 4 : 3} className="py-4 text-ink-muted">
                     No members yet.
                   </td>
                 </tr>
@@ -303,55 +317,59 @@ export default function TeamPage() {
               {members.map((m) => {
                 const isSelf = m.id === userId;
                 const isOwnerRow = m.role === "owner";
-                // Owner can act on every row except the owner row and their own row.
                 const showActions = isOwner && !isOwnerRow && !isSelf;
                 const busy = pendingUserId === m.id;
                 return (
-                  <tr key={m.id} className="border-b last:border-0">
-                    <td className="py-3 pr-4 text-gray-900">
+                  <tr key={m.id} className="border-b border-hairline last:border-0">
+                    <td className="py-3.5 pr-4 font-medium text-ink">
                       {m.email}
-                      {isSelf && <span className="ml-2 text-xs text-gray-400">(you)</span>}
+                      {isSelf && (
+                        <span className="ml-2 text-[0.75rem] text-ink-faint">(you)</span>
+                      )}
                     </td>
-                    <td className="py-3 pr-4">
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-700">
-                        {m.role}
-                      </span>
+                    <td className="py-3.5 pr-4">
+                      <span className="chip chip-ink capitalize">{m.role}</span>
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-3.5 pr-4">
                       <span
-                        className={
-                          m.is_active
-                            ? "inline-flex items-center gap-1 text-xs font-medium text-green-700"
-                            : "inline-flex items-center gap-1 text-xs font-medium text-gray-400"
-                        }
+                        className={cn(
+                          "inline-flex items-center gap-1.5 text-[0.75rem] font-semibold",
+                          m.is_active ? "text-success" : "text-ink-faint"
+                        )}
                       >
+                        <span
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            m.is_active ? "bg-success" : "bg-ink-faint"
+                          )}
+                        />
                         {m.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
                     {isOwner && (
-                      <td className="py-3 text-right">
+                      <td className="py-3.5 text-right">
                         {showActions ? (
                           m.role === "member" ? (
                             <button
                               type="button"
                               onClick={() => void handleRoleChange(m, "admin")}
                               disabled={busy}
-                              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                              className="rounded-md border border-flare-200 bg-flare-50 px-3 py-1.5 text-[0.75rem] font-semibold text-flare-700 transition-colors hover:bg-flare-100 disabled:opacity-50"
                             >
-                              {busy ? "Saving..." : "Promote to admin"}
+                              {busy ? "Saving…" : "Promote to admin"}
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => void handleRoleChange(m, "member")}
                               disabled={busy}
-                              className="rounded-md border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                              className="rounded-md border border-hairline-strong px-3 py-1.5 text-[0.75rem] font-semibold text-ink-muted transition-colors hover:bg-sunken hover:text-ink disabled:opacity-50"
                             >
-                              {busy ? "Saving..." : "Demote to member"}
+                              {busy ? "Saving…" : "Demote to member"}
                             </button>
                           )
                         ) : (
-                          <span className="text-xs text-gray-300">·</span>
+                          <span className="text-ink-faint">·</span>
                         )}
                       </td>
                     )}
@@ -363,12 +381,14 @@ export default function TeamPage() {
         </div>
       </section>
 
-      {/* Workspace settings (issue #31) */}
-      <section className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+      {/* Workspace settings */}
+      <section className="card mt-5 p-6 sm:p-7">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Workspace settings</h2>
-            <p className="mt-1 text-sm text-gray-500">
+            <h2 className="text-[0.9375rem] font-semibold text-ink">
+              Workspace settings
+            </h2>
+            <p className="mt-1 text-[0.8125rem] text-ink-muted">
               {isOwner
                 ? "Manage your workspace name, plan, and seat usage."
                 : "Your workspace plan and seat usage."}
@@ -378,30 +398,33 @@ export default function TeamPage() {
             type="button"
             onClick={() => void loadSettings()}
             disabled={settingsLoading}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="btn btn-ghost px-2.5"
+            aria-label="Refresh settings"
           >
-            {settingsLoading ? "Refreshing..." : "Refresh"}
+            <RefreshCw className={cn("h-4 w-4", settingsLoading && "animate-spin")} />
           </button>
         </div>
 
-        {settingsError && <p className="mt-3 text-sm text-red-600">{settingsError}</p>}
+        {settingsError && (
+          <p className="mt-3 text-[0.8125rem] font-medium text-danger">{settingsError}</p>
+        )}
 
         {!settings && settingsLoading && (
-          <p className="mt-4 text-sm text-gray-500">Loading settings...</p>
+          <div className="skeleton mt-5 h-32 w-full" />
         )}
 
         {settings && (
-          <div className="mt-4 space-y-6">
+          <div className="mt-6 space-y-7">
             {/* Workspace name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Workspace name</label>
+              <label className="field-label">Workspace name</label>
               {isOwner ? (
-                <div className="mt-1 flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={nameDraft}
                     onChange={(e) => setNameDraft(e.target.value)}
-                    className="w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    className="field max-w-sm"
                   />
                   <button
                     type="button"
@@ -411,25 +434,25 @@ export default function TeamPage() {
                       !nameDraft.trim() ||
                       nameDraft.trim() === settings.name
                     }
-                    className="shrink-0 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="btn btn-primary shrink-0"
                   >
-                    {settingsSaving ? "Saving..." : "Save"}
+                    {settingsSaving ? "Saving…" : "Save"}
                   </button>
                 </div>
               ) : (
-                <p className="mt-1 text-sm text-gray-900">{settings.name}</p>
+                <p className="text-[0.9375rem] font-semibold text-ink">{settings.name}</p>
               )}
             </div>
 
             {/* Plan */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Plan</label>
+              <label className="field-label">Plan</label>
               {isOwner ? (
                 <select
                   value={settings.plan}
                   onChange={(e) => void handlePlanChange(e.target.value as WorkspacePlan)}
                   disabled={settingsSaving}
-                  className="mt-1 w-full max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                  className="field max-w-sm capitalize"
                 >
                   {PLANS.map((p) => (
                     <option key={p.value} value={p.value}>
@@ -438,35 +461,32 @@ export default function TeamPage() {
                   ))}
                 </select>
               ) : (
-                <p className="mt-1">
-                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize text-gray-700">
-                    {settings.plan}
-                  </span>
-                </p>
+                <span className="chip chip-ink capitalize">{settings.plan}</span>
               )}
               {isOwner && (
-                <p className="mt-2 text-xs text-amber-700">
-                  Note: billing is not yet integrated. Switching plans takes effect
-                  immediately and does not charge a payment method.
+                <p className="mt-2 text-[0.75rem] text-warn">
+                  Billing isn&apos;t integrated yet — switching plans takes effect
+                  immediately and doesn&apos;t charge a card.
                 </p>
               )}
             </div>
 
             {/* Seat usage */}
             <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">Seats</label>
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center justify-between max-w-sm">
+                <label className="field-label !mb-0">Seats</label>
+                <span className="mono text-[0.8125rem] text-ink">
                   {settings.seat_count} / {settings.seat_limit}
                 </span>
               </div>
-              <div className="mt-2 h-2 w-full max-w-sm overflow-hidden rounded-full bg-gray-100">
+              <div className="mt-2.5 h-2 w-full max-w-sm overflow-hidden rounded-full bg-sunken">
                 <div
-                  className={
+                  className={cn(
+                    "h-full rounded-full",
                     settings.seat_count >= settings.seat_limit
-                      ? "h-full rounded-full bg-red-500"
-                      : "h-full rounded-full bg-blue-600"
-                  }
+                      ? "bg-danger"
+                      : "bg-flare-600"
+                  )}
                   style={{
                     width: `${Math.min(
                       100,
@@ -477,7 +497,7 @@ export default function TeamPage() {
                   }}
                 />
               </div>
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-[0.75rem] text-ink-faint">
                 {settings.seat_count >= settings.seat_limit
                   ? "You've reached your seat limit. Upgrade your plan to invite more teammates."
                   : `${settings.seat_limit - settings.seat_count} seat${

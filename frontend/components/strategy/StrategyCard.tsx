@@ -15,40 +15,45 @@ const motionLabels: Record<string, string> = {
 
 export function StrategyCard({ strategy, className }: StrategyCardProps) {
   return (
-    <div className={cn("rounded-xl border bg-white p-6 shadow-sm", className)}>
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {strategy.positioning_statement.slice(0, 80)}
-            {strategy.positioning_statement.length > 80 ? "..." : ""}
+    <div className={cn("card overflow-hidden", className)}>
+      {/* ink header strip with the motion badge */}
+      <div className="flex items-start justify-between gap-4 border-b border-hairline bg-sunken px-6 py-5">
+        <div className="min-w-0">
+          <p className="eyebrow">Positioning</p>
+          <h3 className="display mt-1.5 text-[1.25rem] font-medium leading-snug text-ink">
+            {strategy.positioning_statement.slice(0, 96)}
+            {strategy.positioning_statement.length > 96 ? "…" : ""}
           </h3>
           {strategy.icp && (
-            <p className="mt-1 text-sm text-gray-500">
-              {strategy.icp.title} · {strategy.icp.industry} · {strategy.icp.company_size}
+            <p className="mt-2 text-[0.8125rem] text-ink-muted">
+              {strategy.icp.title} · {strategy.icp.industry} ·{" "}
+              {strategy.icp.company_size}
             </p>
           )}
         </div>
-        <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+        <span className="chip chip-flare shrink-0">
           {motionLabels[strategy.motion] ?? strategy.motion}
         </span>
       </div>
 
-      {strategy.icp && strategy.icp.pain_points.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Pain Points</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {strategy.icp.pain_points.slice(0, 4).map((p, i) => (
-              <span key={i} className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                {p}
-              </span>
-            ))}
+      <div className="px-6 py-5">
+        {strategy.icp && strategy.icp.pain_points.length > 0 && (
+          <div>
+            <p className="eyebrow">Pain points</p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {strategy.icp.pain_points.slice(0, 4).map((p, i) => (
+                <span key={i} className="chip chip-ink">
+                  {p}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <p className="mt-4 text-xs text-gray-400">
-        Generated {new Date(strategy.generated_at).toLocaleDateString()}
-      </p>
+        <p className="mono mt-5 text-[0.6875rem] text-ink-faint">
+          Generated {new Date(strategy.generated_at).toLocaleDateString()}
+        </p>
+      </div>
     </div>
   );
 }

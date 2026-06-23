@@ -66,7 +66,10 @@ function RegisterForm() {
         isInvite ? undefined : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-700">
+            <Link
+              href="/login"
+              className="font-semibold text-flare-700 underline-offset-2 hover:underline"
+            >
               Sign in
             </Link>
           </>
@@ -75,7 +78,7 @@ function RegisterForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <div className="alert alert-danger">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -83,32 +86,59 @@ function RegisterForm() {
 
         {!isInvite && (
           <div>
-            <label htmlFor="company" className="field-label">Company name</label>
+            <label htmlFor="company" className="field-label">
+              Company name
+            </label>
             <input
-              id="company" type="text" required placeholder="Acme Inc."
-              value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="field"
+              id="company"
+              type="text"
+              required
+              placeholder="Acme Inc."
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="field"
             />
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="field-label">Work email</label>
+          <label htmlFor="email" className="field-label">
+            Work email
+          </label>
           <input
-            id="email" type="email" required autoComplete="email" placeholder="you@company.com"
-            value={email} onChange={(e) => setEmail(e.target.value)} className="field"
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="field"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="field-label">Password</label>
+          <label htmlFor="password" className="field-label">
+            Password
+          </label>
           <input
-            id="password" type="password" required minLength={8} autoComplete="new-password"
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            autoComplete="new-password"
             placeholder="At least 8 characters"
-            value={password} onChange={(e) => setPassword(e.target.value)} className="field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="field"
           />
         </div>
 
-        <button type="submit" disabled={loading} className="btn btn-primary mt-1 w-full">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn btn-primary mt-1 w-full py-3"
+        >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -130,7 +160,7 @@ export default function RegisterPage() {
     <Suspense
       fallback={
         <main className="flex min-h-screen items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-ink-muted" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-faint" />
         </main>
       }
     >

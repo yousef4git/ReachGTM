@@ -7,12 +7,12 @@ interface AgentEventFeedProps {
 }
 
 const eventDot: Record<string, string> = {
-  [AgentEventType.AGENT_START]: "bg-blue-500",
-  [AgentEventType.AGENT_PROGRESS]: "bg-gray-300",
-  [AgentEventType.AGENT_OUTPUT]: "bg-emerald-500",
-  [AgentEventType.AGENT_COMPLETE]: "bg-emerald-600",
-  [AgentEventType.ERROR]: "bg-red-500",
-  [AgentEventType.DONE]: "bg-violet-500",
+  [AgentEventType.AGENT_START]: "bg-flare-500",
+  [AgentEventType.AGENT_PROGRESS]: "bg-ink-faint",
+  [AgentEventType.AGENT_OUTPUT]: "bg-success",
+  [AgentEventType.AGENT_COMPLETE]: "bg-success",
+  [AgentEventType.ERROR]: "bg-danger",
+  [AgentEventType.DONE]: "bg-ink",
 };
 
 const eventLabels: Record<string, string> = {
@@ -33,31 +33,37 @@ export function AgentEventFeed({ events }: AgentEventFeedProps) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-hairline p-6 text-center text-sm text-ink-muted">
+      <div className="rounded-lg border border-dashed border-hairline-strong p-6 text-center text-[0.8125rem] text-ink-muted">
         Events will appear here as agents run.
       </div>
     );
   }
 
   return (
-    <div className="max-h-80 overflow-y-auto rounded-xl border border-hairline bg-canvas p-3">
-      <ul className="space-y-1">
+    <div className="max-h-80 overflow-y-auto rounded-lg border border-hairline bg-sunken p-3">
+      <ul className="space-y-0.5">
         {events.map((evt, i) => (
           <li
             key={i}
-            className="animate-rise flex items-start gap-2.5 rounded-lg px-2 py-1.5 text-xs"
+            className="animate-fade flex items-start gap-2.5 rounded-md px-2 py-1.5 text-[0.75rem] hover:bg-surface"
           >
             <span
-              className={`mt-1 h-2 w-2 shrink-0 rounded-full ${eventDot[evt.event] ?? "bg-gray-300"}`}
+              className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${eventDot[evt.event] ?? "bg-ink-faint"}`}
               aria-hidden
             />
-            <div className="min-w-0">
-              <span className="font-semibold text-ink">{evt.agent ?? "system"}</span>
+            <div className="min-w-0 flex-1">
+              <span className="mono text-[0.6875rem] font-semibold uppercase tracking-wider text-ink">
+                {evt.agent ?? "system"}
+              </span>
               {eventLabels[evt.event] && (
-                <span className="ml-1.5 text-ink-muted">{eventLabels[evt.event]}</span>
+                <span className="mono ml-1.5 text-[0.6875rem] uppercase tracking-wider text-flare-700">
+                  {eventLabels[evt.event]}
+                </span>
               )}
               {evt.message && (
-                <p className="mt-0.5 break-words text-ink-muted">{evt.message}</p>
+                <p className="mt-0.5 break-words text-[0.8125rem] text-ink-muted">
+                  {evt.message}
+                </p>
               )}
             </div>
           </li>

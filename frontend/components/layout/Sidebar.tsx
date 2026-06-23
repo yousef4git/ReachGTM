@@ -20,16 +20,26 @@ const ICONS: Record<string, React.ReactNode> = {
   [ContentType.AD_COPY]: <Megaphone className="h-4 w-4" />,
 };
 
-function SideLink({ href, label, icon, pathname }: { href: string; label: string; icon: React.ReactNode; pathname: string }) {
+function SideLink({
+  href,
+  label,
+  icon,
+  pathname,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  pathname: string;
+}) {
   const active = pathname === href || pathname.startsWith(href.split("?")[0]);
   return (
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+        "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[0.8125rem] font-medium transition-colors",
         active
-          ? "bg-blue-50 text-blue-700"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          ? "bg-flare-50 text-flare-700"
+          : "text-ink-muted hover:bg-sunken hover:text-ink"
       )}
     >
       {icon}
@@ -42,11 +52,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 border-r bg-white">
+    <aside className="w-60 shrink-0 border-r border-hairline bg-surface">
       <div className="p-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-          Content Types
-        </p>
+        <p className="eyebrow mb-2.5 px-3">Content Types</p>
         <div className="space-y-1">
           {Object.values(ContentType).map((type) => (
             <SideLink
@@ -59,12 +67,20 @@ export function Sidebar() {
           ))}
         </div>
 
-        <div className="mt-6 border-t pt-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
-            Actions
-          </p>
-          <SideLink href="/content/create" label="Create Content" icon={<FileText className="h-4 w-4" />} pathname={pathname} />
-          <SideLink href="/knowledge" label="Upload Knowledge" icon={<Upload className="h-4 w-4" />} pathname={pathname} />
+        <div className="mt-6 border-t border-hairline pt-4">
+          <p className="eyebrow mb-2.5 px-3">Actions</p>
+          <SideLink
+            href="/content/create"
+            label="Create Content"
+            icon={<FileText className="h-4 w-4" />}
+            pathname={pathname}
+          />
+          <SideLink
+            href="/knowledge"
+            label="Upload Knowledge"
+            icon={<Upload className="h-4 w-4" />}
+            pathname={pathname}
+          />
         </div>
       </div>
     </aside>

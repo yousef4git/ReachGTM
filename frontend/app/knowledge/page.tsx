@@ -4,7 +4,15 @@ import { useState, useCallback, useRef, type FormEvent } from "react";
 import { knowledgeApi } from "@/lib/api";
 import { useStore } from "@/store/useStore";
 import { useQuery } from "@tanstack/react-query";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Trash2, X, BookOpen } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  X,
+  BookOpen,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { KnowledgeDocument } from "@/types";
 
@@ -26,7 +34,7 @@ function useKnowledgeList() {
 
 export default function KnowledgePage() {
   const addKnowledgeDoc = useStore((s) => s.addKnowledgeDoc);
-  const { data: docs, isLoading, error } = useKnowledgeList();
+  const { data: docs, isLoading } = useKnowledgeList();
   const knowledgeDocs = useStore((s) => s.knowledgeDocs);
 
   const [file, setFile] = useState<File | null>(null);
@@ -43,7 +51,12 @@ export default function KnowledgePage() {
     e.preventDefault();
     setDragOver(false);
     const dropped = e.dataTransfer.files[0];
-    if (dropped && (dropped.name.endsWith(".pdf") || dropped.name.endsWith(".docx") || dropped.name.endsWith(".doc"))) {
+    if (
+      dropped &&
+      (dropped.name.endsWith(".pdf") ||
+        dropped.name.endsWith(".docx") ||
+        dropped.name.endsWith(".doc"))
+    ) {
       setFile(dropped);
     }
   }, []);
@@ -65,7 +78,7 @@ export default function KnowledgePage() {
       try {
         const result = await knowledgeApi.upload(file, docType);
         addKnowledgeDoc(result);
-        setUploadSuccess(`${file.name} uploaded and indexed successfully.`);
+        setUploadSuccess(`${file.name} uploaded and indexed.`);
         setFile(null);
         if (inputRef.current) inputRef.current.value = "";
       } catch (err) {
@@ -78,179 +91,206 @@ export default function KnowledgePage() {
   );
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Knowledge Base</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Upload product documentation, sales decks, and other materials to power your GTM agents.
-          </p>
-        </div>
+    <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8 sm:py-16">
+      <header className="animate-rise mb-9">
+        <p className="eyebrow">Grounding</p>
+        <h1 className="display mt-2.5 text-[2.5rem] font-medium leading-tight text-ink">
+          Knowledge base
+        </h1>
+        <p className="mt-2 max-w-xl text-[0.9375rem] text-ink-muted">
+          Upload product docs, decks, and case studies. The agents read them to
+          stay grounded in your voice and facts.
+        </p>
+      </header>
 
-        {/* Upload Form */}
-        <form onSubmit={handleUpload} className="mb-8 space-y-4">
-          {/* Drop Zone */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-            className={cn(
-              "cursor-pointer rounded-xl border-2 border-dashed bg-white p-10 text-center transition-colors",
-              dragOver
-                ? "border-blue-400 bg-blue-50"
-                : file
-                  ? "border-green-300 bg-green-50"
-                  : "border-gray-300 hover:border-gray-400"
-            )}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".pdf,.docx,.doc"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
+      {/* Upload Form */}
+      <form onSubmit={handleUpload} className="mb-10 space-y-4">
+        {/* Drop Zone */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          className={cn(
+            "cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors",
+            dragOver
+              ? "border-flare-500 bg-flare-50"
+              : file
+                ? "border-success bg-success-tint"
+                : "border-hairline-strong bg-surface hover:border-ink-faint"
+          )}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".pdf,.docx,.doc"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
-            {file ? (
-              <div className="flex items-center justify-center gap-3">
-                <FileText className="h-8 w-8 text-green-500" />
-                <div className="text-left">
-                  <p className="font-medium text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {(file.size / 1024).toFixed(0)} KB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFile(null); if (inputRef.current) inputRef.current.value = ""; }}
-                  className="rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div>
-                <Upload className="mx-auto mb-3 h-8 w-8 text-gray-400" />
-                <p className="text-sm font-medium text-gray-700">
-                  Drop a PDF or DOCX here, or click to browse
-                </p>
-                <p className="mt-1 text-xs text-gray-400">
-                  Supports .pdf, .docx, .doc
+          {file ? (
+            <div className="flex items-center justify-center gap-3">
+              <FileText className="h-8 w-8 text-success" />
+              <div className="text-left">
+                <p className="font-semibold text-ink">{file.name}</p>
+                <p className="mono text-[0.6875rem] text-ink-faint">
+                  {(file.size / 1024).toFixed(0)} KB
                 </p>
               </div>
-            )}
-          </div>
-
-          {/* Document Type */}
-          <div className="rounded-xl border bg-white p-6 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">Document Type</h2>
-            <div className="flex flex-wrap gap-2">
-              {DOC_TYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setDocType(opt.value)}
-                  className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm transition-colors",
-                    docType === opt.value
-                      ? "border-blue-300 bg-blue-50 text-blue-700"
-                      : "border-gray-200 text-gray-600 hover:border-gray-300"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFile(null);
+                  if (inputRef.current) inputRef.current.value = "";
+                }}
+                className="rounded-full p-1 text-ink-faint hover:bg-sunken hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={!file || uploading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            {uploading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Uploading & Indexing…</>
-            ) : (
-              <><Upload className="h-4 w-4" /> Upload Document</>
-            )}
-          </button>
-
-          {uploadError && (
-            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {uploadError}
-            </div>
-          )}
-
-          {uploadSuccess && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-              <CheckCircle className="h-4 w-4 shrink-0" />
-              {uploadSuccess}
-            </div>
-          )}
-        </form>
-
-        {/* Document List */}
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Uploaded Documents
-            {allDocs.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-gray-400">({allDocs.length})</span>
-            )}
-          </h2>
-
-          {isLoading && (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-            </div>
-          )}
-
-          {!isLoading && allDocs.length === 0 && (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-12 text-center">
-              <BookOpen className="mx-auto mb-3 h-8 w-8 text-gray-300" />
-              <p className="text-sm font-medium text-gray-700">No documents uploaded yet</p>
-              <p className="mt-1 text-xs text-gray-400">
-                Upload a PDF or DOCX above to power your GTM agents with company knowledge.
+          ) : (
+            <div>
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sunken text-ink-muted">
+                <Upload className="h-5 w-5" />
+              </span>
+              <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
+                Drop a PDF or DOCX, or click to browse
+              </p>
+              <p className="mono mt-1 text-[0.6875rem] text-ink-faint">
+                .pdf · .docx · .doc
               </p>
             </div>
           )}
+        </div>
 
-          {allDocs.length > 0 && (
-            <div className="space-y-3">
-              {allDocs.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between rounded-xl border bg-white px-5 py-4 shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{doc.filename}</p>
-                      <p className="text-xs text-gray-400">
-                        {DOC_TYPE_OPTIONS.find((o) => o.value === doc.doc_type)?.label ?? doc.doc_type}
-                        {doc.chunk_count !== null && doc.chunk_count !== undefined && (
+        {/* Document Type */}
+        <div className="card p-5">
+          <h2 className="eyebrow mb-3">Document type</h2>
+          <div className="flex flex-wrap gap-2">
+            {DOC_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setDocType(opt.value)}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 text-[0.8125rem] font-medium transition-colors",
+                  docType === opt.value
+                    ? "border-flare-600 bg-flare-50 text-flare-700"
+                    : "border-hairline-strong text-ink-muted hover:border-ink-faint hover:text-ink"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!file || uploading}
+          className="btn btn-flare w-full py-3.5 text-[0.9375rem]"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Uploading & indexing…
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" /> Upload document
+            </>
+          )}
+        </button>
+
+        {uploadError && (
+          <div className="alert alert-danger">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {uploadError}
+          </div>
+        )}
+        {uploadSuccess && (
+          <div className="alert alert-success">
+            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            {uploadSuccess}
+          </div>
+        )}
+      </form>
+
+      {/* Document List */}
+      <div className="flex items-center gap-3">
+        <h2 className="eyebrow !text-ink-muted">
+          Indexed documents{allDocs.length > 0 && ` · ${allDocs.length}`}
+        </h2>
+        <div className="rule flex-1" />
+      </div>
+
+      <div className="mt-5">
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-flare-600" />
+          </div>
+        )}
+
+        {!isLoading && allDocs.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-hairline-strong bg-surface p-14 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sunken text-ink-faint">
+              <BookOpen className="h-6 w-6" />
+            </span>
+            <p className="mt-4 text-[1.0625rem] font-semibold text-ink">
+              No documents yet
+            </p>
+            <p className="mx-auto mt-1.5 max-w-sm text-[0.875rem] text-ink-muted">
+              Upload a PDF or DOCX to ground your agents in company knowledge.
+            </p>
+          </div>
+        )}
+
+        {allDocs.length > 0 && (
+          <div className="stagger space-y-2.5">
+            {allDocs.map((doc) => (
+              <div
+                key={doc.id}
+                className="card flex items-center justify-between px-5 py-4"
+              >
+                <div className="flex min-w-0 items-center gap-3.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sunken text-ink-muted">
+                    <FileText className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[0.875rem] font-semibold text-ink">
+                      {doc.filename}
+                    </p>
+                    <p className="mono mt-0.5 text-[0.6875rem] text-ink-faint">
+                      {DOC_TYPE_OPTIONS.find((o) => o.value === doc.doc_type)
+                        ?.label ?? doc.doc_type}
+                      {doc.chunk_count !== null &&
+                        doc.chunk_count !== undefined && (
                           <> · {doc.chunk_count} chunks</>
                         )}
-                        <> · {new Date(doc.created_at).toLocaleDateString()}</>
-                      </p>
-                    </div>
+                      {" · "}
+                      {new Date(doc.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  <span className={cn(
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    doc.status === "indexed" ? "bg-green-100 text-green-700" :
-                    doc.status === "failed" ? "bg-red-100 text-red-700" :
-                    "bg-yellow-100 text-yellow-700"
-                  )}>
-                    {doc.status}
-                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <span
+                  className={cn(
+                    "chip shrink-0",
+                    doc.status === "indexed"
+                      ? "chip-success"
+                      : doc.status === "failed"
+                        ? "chip-danger"
+                        : "chip-warn"
+                  )}
+                >
+                  {doc.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

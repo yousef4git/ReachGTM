@@ -42,7 +42,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!allowed) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-flare-600" />
       </div>
     );
   }
