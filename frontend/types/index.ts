@@ -103,6 +103,17 @@ export interface CreateInviteResponse {
   invite_url: string;
 }
 
+export interface TeamMember {
+  id: string;
+  email: string;
+  role: TeamRole;
+  is_active: boolean;
+  created_at: string;
+}
+
+// Roles assignable via the promote/demote endpoint ("owner" is not settable).
+export type AssignableRole = "member" | "admin";
+
 export interface KnowledgeDocument {
   id: string;
   filename: string;

@@ -40,3 +40,10 @@ export function getRole(): string | null {
   if (!token) return null;
   return decodeJwt(token)?.role ?? null;
 }
+
+/** Reads the `sub` (user id) claim from the stored access token, or null. */
+export function getUserId(): string | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  return decodeJwt(token)?.sub ?? null;
+}

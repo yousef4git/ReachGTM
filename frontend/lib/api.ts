@@ -8,6 +8,8 @@ import type {
   AcceptInviteRequest,
   CreateInviteRequest,
   CreateInviteResponse,
+  TeamMember,
+  AssignableRole,
 } from "@/types";
 
 const api = axios.create({
@@ -49,6 +51,12 @@ export const authApi = {
 export const teamApi = {
   createInvite: (body: CreateInviteRequest) =>
     api.post<CreateInviteResponse>("/api/v1/auth/invite", body).then((r) => r.data),
+  listMembers: () =>
+    api.get<TeamMember[]>("/api/v1/team/members").then((r) => r.data),
+  updateMemberRole: (userId: string, role: AssignableRole) =>
+    api
+      .patch<TeamMember>(`/api/v1/team/members/${userId}/role`, { role })
+      .then((r) => r.data),
 };
 
 export const strategyApi = {
