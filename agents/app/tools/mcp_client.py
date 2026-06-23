@@ -28,13 +28,6 @@ def _server_configs() -> dict:
             "transport": "stdio",
         }
 
-    if settings.attio_api_key and settings.attio_mcp_url:
-        configs["attio"] = {
-            "url": settings.attio_mcp_url,
-            "transport": "streamable_http",
-            "headers": {"Authorization": f"Bearer {settings.attio_api_key}"},
-        }
-
     if settings.salesforce_api_key and settings.salesforce_mcp_url:
         configs["salesforce"] = {
             "url": settings.salesforce_mcp_url,
