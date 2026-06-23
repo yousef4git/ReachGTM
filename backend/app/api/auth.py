@@ -19,7 +19,9 @@ def _build_token_response(user: dict) -> TokenResponse:
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(body: RegisterRequest, conn: asyncpg.Connection = Depends(get_db)):
-    existing = await conn.fetchval("SELECT id FROM users WHERE email = $1", body.email)
+    existing = await conn.fetchval(
+        "SELECT id FROM users WHERE LOWER(email) = LOWER($1)", body.email
+    )
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     user = await auth_service.register_company_and_user(conn, body.email, body.password, body.company_name)
@@ -52,12 +54,15 @@ async def refresh(request: Request, conn: asyncpg.Connection = Depends(get_db)):
 
 @router.post("/invite")
 async def invite(request: Request, conn: asyncpg.Connection = Depends(get_db)):
-    # TODO Epic 1 PR #4 — requires owner/admin role check
+    role = getattr(request.state, "role", "member")
+    if role not in {"owner", "admin"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
     company_id = request.state.company_id
     user_id = request.state.user_id
     body = await request.json()
-    role = body.get("role", "member")
-    token = auth_service.create_invite_token(company_id, user_id, role)
+    invite_role = body.get("role", "member")
+    token = auth_service.create_invite_token(company_id, user_id, invite_role)
     return {"invite_token": token, "invite_url": f"/register?invite={token}"}
 
 @router.post("/accept-invite", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)

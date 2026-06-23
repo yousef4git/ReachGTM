@@ -1,0 +1,15 @@
+# Cloudflare Pages configuration for ReachGTM frontend
+# Deploys Next.js static export (output: "export") from out/
+# https://developers.cloudflare.com/pages/
+
+name = "reachgtm"
+
+compatibility_date = "2026-06-18"
+
+[build]
+  command = "npm run build"
+  output_dir = "out"
+
+[env.production]
+  # Set via Cloudflare Pages dashboard → Environment variables
+  vars = { NEXT_PUBLIC_API_URL = "https://reachgtm-backend.railway.app" }

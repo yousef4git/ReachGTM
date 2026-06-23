@@ -1,3 +1,380 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ReachGTM — "Command Desk" design system
+   ───────────────────────────────────────────────────────────────────────────
+   An editorial intelligence workspace, not another blue-on-white SaaS. The
+   register: warm paper canvas, ink as the dominant brand color, and a single
+   vermilion "signal" accent — the targeting/reach metaphor — used sparingly for
+   live states, selection, and the things that matter. Data wears monospace.
+   No color gradients anywhere; depth comes from hairlines, ink, and grain.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Type ────────────────────────────────────────────────────────────────
+     Fraunces (editorial serif) for display + numerals, Hanken Grotesk for UI,
+     JetBrains Mono for data/IDs/metrics. Loaded via <link> in layout.tsx. */
+  --font-sans: "Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Arial, sans-serif;
+  --font-display: "Fraunces", "Hanken Grotesk", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --default-font-family: var(--font-sans);
+
+  /* ── Surfaces — warm paper, never cold gray ──────────────────────────────── */
+  --color-canvas: oklch(0.984 0.006 76);     /* app background   ~#FBF8F3 */
+  --color-surface: oklch(1 0.0015 76);       /* cards / panels   ~#FFFFFF */
+  --color-sunken: oklch(0.965 0.008 76);     /* wells / insets   ~#F2EEE6 */
+  --color-ink: oklch(0.235 0.014 56);        /* primary text     ~#272320 */
+  --color-ink-muted: oklch(0.5 0.013 58);    /* secondary text   ~#75706A */
+  --color-ink-faint: oklch(0.66 0.011 62);   /* tertiary / hint  ~#A29C94 */
+  --color-hairline: oklch(0.905 0.007 72);   /* borders          ~#E5DFD6 */
+  --color-hairline-strong: oklch(0.85 0.009 70);
+
+  /* ── Signal — vermilion accent ("reach the target") ──────────────────────── */
+  --color-flare-50: oklch(0.967 0.018 42);
+  --color-flare-100: oklch(0.93 0.04 40);
+  --color-flare-200: oklch(0.875 0.075 38);
+  --color-flare-300: oklch(0.795 0.118 35);
+  --color-flare-400: oklch(0.712 0.165 32);
+  --color-flare-500: oklch(0.655 0.198 30);
+  --color-flare-600: oklch(0.605 0.21 29);   /* primary signal   ~#E5431F */
+  --color-flare-700: oklch(0.53 0.188 28);   /* hover            ~#C2331A */
+  --color-flare-800: oklch(0.45 0.155 28);
+  --color-flare-900: oklch(0.38 0.12 30);
+
+  /* Map Tailwind's `blue` ramp onto flare so any stray *-blue-* utility stays
+     on-brand instead of reintroducing the generic SaaS blue. */
+  --color-blue-50: var(--color-flare-50);
+  --color-blue-100: var(--color-flare-100);
+  --color-blue-200: var(--color-flare-200);
+  --color-blue-300: var(--color-flare-300);
+  --color-blue-400: var(--color-flare-400);
+  --color-blue-500: var(--color-flare-500);
+  --color-blue-600: var(--color-flare-600);
+  --color-blue-700: var(--color-flare-700);
+  --color-blue-800: var(--color-flare-800);
+  --color-blue-900: var(--color-flare-900);
+
+  /* ── Functional semantics ─────────────────────────────────────────────────── */
+  --color-success: oklch(0.58 0.12 158);
+  --color-success-tint: oklch(0.95 0.04 158);
+  --color-warn: oklch(0.72 0.142 72);
+  --color-warn-tint: oklch(0.95 0.05 80);
+  --color-danger: oklch(0.575 0.205 24);
+  --color-danger-tint: oklch(0.955 0.03 30);
+
+  /* ── Radii — editorial, a touch sharper than the Apple default ─────────────── */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* ── Shadows — soft, warm-tinted, low ─────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px oklch(0.3 0.03 56 / 0.05);
+  --shadow-sm: 0 1px 2px oklch(0.3 0.03 56 / 0.06), 0 1px 1px oklch(0.3 0.03 56 / 0.04);
+  --shadow-md: 0 2px 6px oklch(0.3 0.03 56 / 0.07), 0 10px 28px -10px oklch(0.3 0.03 56 / 0.14);
+  --shadow-lg: 0 4px 14px oklch(0.3 0.03 56 / 0.08), 0 28px 56px -18px oklch(0.3 0.03 56 / 0.22);
+  --shadow-flare: 0 6px 20px -6px oklch(0.605 0.21 29 / 0.45);
+
+  --ease-out-quart: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    position: relative;
+    min-height: 100vh;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    letter-spacing: -0.006em;
+  }
+
+  /* Paper grain — a faint SVG noise wash for warmth and depth (not a gradient). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+  }
+
+  /* App content sits above the grain. */
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-flare-600) 26%, transparent);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-flare-600);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-faint);
+  }
+
+  /* Warm, native scrollbars. */
+  * {
+    scrollbar-color: var(--color-hairline-strong) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-hairline-strong);
+    border: 3px solid var(--color-canvas);
+    border-radius: 999px;
+  }
+}
+
+/* ── Component vocabulary ───────────────────────────────────────────────────── */
+@layer components {
+  /* Eyebrow — the small uppercase mono labels that give the editorial register. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  /* Display numerals / headings use the serif. */
+  .display { font-family: var(--font-display); letter-spacing: -0.025em; }
+  .mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
+
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-flat {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-xl);
+  }
+
+  /* Buttons — ink is primary (premium), flare is the singular hot action. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-md);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.6875rem 1.05rem;
+    transition: background-color 0.2s var(--ease-out-quart),
+      color 0.2s var(--ease-out-quart), transform 0.18s var(--ease-out-quart),
+      box-shadow 0.2s var(--ease-out-quart), border-color 0.2s var(--ease-out-quart),
+      opacity 0.2s var(--ease-out-quart);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background-color: var(--color-ink);
+    color: var(--color-canvas);
+    box-shadow: var(--shadow-xs);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: oklch(0.32 0.018 56);
+    box-shadow: var(--shadow-md);
+  }
+
+  .btn-flare {
+    background-color: var(--color-flare-600);
+    color: #fff;
+    box-shadow: var(--shadow-flare);
+  }
+  .btn-flare:hover:not(:disabled) { background-color: var(--color-flare-700); }
+
+  .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-hairline-strong);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-sunken);
+    border-color: var(--color-ink-faint);
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-ink-muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--color-ink) 6%, transparent);
+    color: var(--color-ink);
+  }
+
+  /* Form fields */
+  .field {
+    width: 100%;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline-strong);
+    border-radius: var(--radius-md);
+    padding: 0.6875rem 0.875rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    transition: border-color 0.16s var(--ease-out-quart),
+      box-shadow 0.16s var(--ease-out-quart);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-flare-600);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-flare-600) 16%, transparent);
+  }
+  .field-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.4rem;
+  }
+
+  /* Chips / badges */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .chip-ink { background-color: var(--color-sunken); color: var(--color-ink); }
+  .chip-flare {
+    background-color: var(--color-flare-50);
+    color: var(--color-flare-700);
+  }
+  .chip-success { background-color: var(--color-success-tint); color: var(--color-success); }
+  .chip-warn { background-color: var(--color-warn-tint); color: oklch(0.5 0.12 65); }
+  .chip-danger { background-color: var(--color-danger-tint); color: var(--color-danger); }
+
+  /* Alert blocks */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+  }
+  .alert-danger {
+    border-color: color-mix(in oklab, var(--color-danger) 28%, transparent);
+    background-color: var(--color-danger-tint);
+    color: var(--color-danger);
+  }
+  .alert-success {
+    border-color: color-mix(in oklab, var(--color-success) 28%, transparent);
+    background-color: var(--color-success-tint);
+    color: var(--color-success);
+  }
+  .alert-warn {
+    border-color: color-mix(in oklab, var(--color-warn) 38%, transparent);
+    background-color: var(--color-warn-tint);
+    color: oklch(0.46 0.11 65);
+  }
+
+  /* Hairline divider */
+  .rule {
+    height: 1px;
+    background-color: var(--color-hairline);
+  }
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────────── */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes drift {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50% { transform: translate(-50%, 26px) scale(1.06); }
+}
+@keyframes drift-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -22px) scale(1.08); }
+}
+
+/* Signal pulse — the flare ring that marks a live agent. */
+@keyframes signal-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-flare-600) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px color-mix(in oklab, var(--color-flare-600) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-flare-600) 0%, transparent); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.animate-rise { animation: rise-in 0.55s var(--ease-out-quart) both; }
+.animate-fade { animation: fade-in 0.5s var(--ease-out-quart) both; }
+
+.stagger > * { animation: rise-in 0.55s var(--ease-out-quart) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.19s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.29s; }
+.stagger > *:nth-child(7) { animation-delay: 0.34s; }
+.stagger > *:nth-child(8) { animation-delay: 0.39s; }
+
+.auth-blob { animation: drift 16s ease-in-out infinite; }
+.auth-blob-slow { animation: drift-slow 22s ease-in-out infinite; }
+.signal-pulse { animation: signal-pulse 1.8s var(--ease-out-quart) infinite; }
+
+.skeleton {
+  background-color: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  border-radius: var(--radius-md);
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+/* Press + lift feedback for interactive cards/rows. */
+.press { transition: transform 0.2s var(--ease-out-quart), box-shadow 0.2s var(--ease-out-quart); }
+.press:active { transform: scale(0.99); }
+.lift { transition: transform 0.24s var(--ease-out-quart), box-shadow 0.24s var(--ease-out-quart), border-color 0.24s var(--ease-out-quart); }
+.lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise, .animate-fade, .stagger > *, .auth-blob, .auth-blob-slow,
+  .signal-pulse, .skeleton { animation: none; }
+  .animate-rise, .animate-fade, .stagger > * { opacity: 1; transform: none; }
+  html { scroll-behavior: auto; }
+}

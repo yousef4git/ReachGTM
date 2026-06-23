@@ -168,6 +168,7 @@ class AgentEventType(str, Enum):
     AGENT_PROGRESS = "agent_progress"
     AGENT_OUTPUT = "agent_output"
     AGENT_COMPLETE = "agent_complete"
+    PERSISTED = "persisted"  # emitted by the backend relay after the bundle is saved to DB
     ERROR = "error"
     DONE = "done"
 
@@ -206,6 +207,6 @@ class StrategyGenerateRequest(BaseModel):
     additional_context: Optional[str] = None
 
 class ContentGenerateRequest(BaseModel):
-    strategy_id: UUID
+    strategy_id: Optional[UUID] = None
     content_types: list[ContentType]
     count_per_type: int = 3

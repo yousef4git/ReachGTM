@@ -65,3 +65,10 @@ jobs:
             --cluster reachgtm-prod \
             --service reachgtm-frontend \
             --force-new-deployment
+
+  # Post-deploy zero-downtime verification: run the smoke suite against the
+  # deployed URLs once the rollout completes.
+  smoke:
+    needs: build-and-deploy
+    uses: ./.github/workflows/smoke.yml
+    secrets: inherit

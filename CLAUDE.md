@@ -71,4 +71,5 @@ See `docs/epics/epic-1-foundation.md` for all 8 PRs and acceptance criteria.
 - `docs/api.md` — Complete API reference (every endpoint, request/response types)
 - `docs/agents.md` — Agent reference (inputs, outputs, prompts, MCP tools, LangSmith tags)
 - `docs/deployment.md` — Local, staging, and production deployment guide
+- `docs/test-plan.md` — Project-wide test strategy, coverage gates, per-PR checklist
 - `docs/epics/` — Epic-by-Epic PR plan with acceptance criteria

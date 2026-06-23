@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+# One clean root test command: `pytest` from the repo root runs both suites.
+# - testpaths: collected when no path is given on the CLI (CI still passes
+#   explicit paths, which take precedence).
+# - pythonpath: put the repo root on sys.path so `backend.*` / `agents.*`
+#   import without installing the packages (matches CI's PYTHONPATH=.).
+# - import-mode=importlib: import test modules under unique names so the two
+#   `tests/` directories no longer collide (the old failure was both being a
+#   package named `tests`). Requires no `__init__.py` in the test dirs.
+testpaths = ["backend/tests", "agents/tests"]
+pythonpath = ["."]
+addopts = "--import-mode=importlib"
+# Registered markers (avoids PytestUnknownMarkWarning). The production
+# smoke suite under `smoke/` is marked `@pytest.mark.smoke`; it is NOT in
+# `testpaths`, so a bare `pytest` never collects it — run it explicitly with
+# `pytest smoke/ -m smoke`.
+markers = [
+    "smoke: production smoke tests run against deployed URLs (see smoke/).",
+]

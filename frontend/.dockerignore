@@ -1,0 +1,23 @@
+# Never copy host-installed deps or build output into the image — they get
+# rebuilt cleanly via `npm ci` / `npm run build` and host node_modules may be
+# the wrong CPU architecture (macOS) for the linux container.
+node_modules
+.next
+out
+
+# VCS / CI
+.git
+.gitignore
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Docker / editor / OS noise
+Dockerfile
+.dockerignore
+.vscode
+.idea
+.DS_Store
+npm-debug.log*
