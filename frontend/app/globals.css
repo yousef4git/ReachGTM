@@ -1,3 +1,232 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   Apple-grade product UI: one tuned sans, restrained neutral surfaces, a
+   single blue accent for primary actions / selection / state. The Tailwind
+   `blue` ramp is overridden to Apple's system blue so existing `*-blue-*`
+   utilities are on-brand everywhere. */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+    "Segoe UI", Roboto, Arial, sans-serif;
+  --default-font-family: var(--font-sans);
+
+  /* Neutral surfaces — cool, near-white, Apple #f5f5f7 / #fbfbfd family */
+  --color-canvas: oklch(0.967 0.0015 264);   /* app background  ~#f5f5f7 */
+  --color-surface: oklch(1 0 0);             /* cards / panels  ~#ffffff */
+  --color-ink: oklch(0.22 0.004 264);        /* primary text    ~#1d1d1f */
+  --color-ink-muted: oklch(0.53 0.006 264);  /* secondary text  ~#6e6e73 */
+  --color-hairline: oklch(0.9 0.003 264);    /* borders         ~#d2d2d7 */
+
+  /* Accent — Apple system blue ramp (overrides Tailwind default blue) */
+  --color-blue-50: oklch(0.971 0.018 251);
+  --color-blue-100: oklch(0.936 0.04 251);
+  --color-blue-200: oklch(0.882 0.07 251);
+  --color-blue-300: oklch(0.806 0.11 251);
+  --color-blue-400: oklch(0.715 0.158 251);
+  --color-blue-500: oklch(0.655 0.182 251);
+  --color-blue-600: oklch(0.598 0.196 252);  /* primary  ~#0071e3 */
+  --color-blue-700: oklch(0.535 0.184 253);  /* hover    ~#0062c4 */
+  --color-blue-800: oklch(0.47 0.155 254);
+  --color-blue-900: oklch(0.4 0.12 255);
+
+  /* Radii — Apple's generous rounding */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+  --radius-2xl: 1.375rem;
+
+  /* Shadows — soft, low, layered */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.03);
+  --shadow-md: 0 2px 6px rgb(0 0 0 / 0.06), 0 8px 24px -8px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.07), 0 24px 48px -16px rgb(0 0 0 / 0.16);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-blue-600) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Quiet, native-feeling placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-muted);
+    opacity: 0.7;
+  }
+}
+
+/* ── Components ─────────────────────────────────────────────────────────────
+   A small, consistent vocabulary reused across surfaces (product register:
+   same button shape, same field everywhere). */
+@layer components {
+  .card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 590;
+    line-height: 1;
+    padding: 0.625rem 1rem;
+    transition: background-color 0.18s var(--ease-out-quart),
+      transform 0.18s var(--ease-out-quart), box-shadow 0.18s var(--ease-out-quart),
+      opacity 0.18s var(--ease-out-quart);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.975); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background-color: var(--color-blue-600);
+    color: #fff;
+    box-shadow: var(--shadow-xs);
+  }
+  .btn-primary:hover:not(:disabled) { background-color: var(--color-blue-700); }
+
+  .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-hairline);
+  }
+  .btn-secondary:hover:not(:disabled) { background-color: var(--color-canvas); }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-ink-muted);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--color-ink) 6%, transparent);
+    color: var(--color-ink);
+  }
+
+  .field {
+    width: 100%;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    transition: border-color 0.16s var(--ease-out-quart),
+      box-shadow 0.16s var(--ease-out-quart);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-blue-600);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-blue-600) 14%, transparent);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 560;
+    color: var(--color-ink);
+    margin-bottom: 0.375rem;
+  }
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────────
+   Subtle entrance + ambient life. Every reveal enhances an already-visible
+   default; nothing gates content visibility on a class. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Slow ambient drift for the auth background blobs. */
+@keyframes drift {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50% { transform: translate(-50%, 24px) scale(1.06); }
+}
+@keyframes drift-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-28px, -20px) scale(1.08); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.animate-rise {
+  animation: rise-in 0.5s var(--ease-out-quart) both;
+}
+
+/* Staggered children: add .stagger to a parent, items rise in sequence. */
+.stagger > * {
+  animation: rise-in 0.5s var(--ease-out-quart) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.19s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.29s; }
+.stagger > *:nth-child(7) { animation-delay: 0.34s; }
+.stagger > *:nth-child(8) { animation-delay: 0.39s; }
+
+.auth-blob { animation: drift 16s ease-in-out infinite; }
+.auth-blob-slow { animation: drift-slow 22s ease-in-out infinite; }
+
+/* Skeleton loading (gradient-free: a soft opacity pulse). */
+.skeleton {
+  background-color: color-mix(in oklab, var(--color-ink) 8%, transparent);
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+/* Press feedback for interactive cards/rows. */
+.press { transition: transform 0.18s var(--ease-out-quart), box-shadow 0.18s var(--ease-out-quart); }
+.press:active { transform: scale(0.99); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .stagger > *,
+  .auth-blob,
+  .auth-blob-slow,
+  .skeleton { animation: none; }
+  .animate-rise,
+  .stagger > * { opacity: 1; transform: none; }
+  * { scroll-behavior: auto !important; }
+}

@@ -6,13 +6,13 @@ interface AgentEventFeedProps {
   events: AgentEvent[];
 }
 
-const eventColors: Record<string, string> = {
-  [AgentEventType.AGENT_START]: "text-blue-600 border-l-blue-400",
-  [AgentEventType.AGENT_PROGRESS]: "text-gray-600 border-l-gray-300",
-  [AgentEventType.AGENT_OUTPUT]: "text-green-700 border-l-green-400",
-  [AgentEventType.AGENT_COMPLETE]: "text-green-600 border-l-green-500",
-  [AgentEventType.ERROR]: "text-red-600 border-l-red-500",
-  [AgentEventType.DONE]: "text-purple-600 border-l-purple-500",
+const eventDot: Record<string, string> = {
+  [AgentEventType.AGENT_START]: "bg-blue-500",
+  [AgentEventType.AGENT_PROGRESS]: "bg-gray-300",
+  [AgentEventType.AGENT_OUTPUT]: "bg-emerald-500",
+  [AgentEventType.AGENT_COMPLETE]: "bg-emerald-600",
+  [AgentEventType.ERROR]: "bg-red-500",
+  [AgentEventType.DONE]: "bg-violet-500",
 };
 
 const eventLabels: Record<string, string> = {
@@ -33,29 +33,37 @@ export function AgentEventFeed({ events }: AgentEventFeedProps) {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
-        Events will appear here as agents run…
+      <div className="rounded-xl border border-dashed border-hairline p-6 text-center text-sm text-ink-muted">
+        Events will appear here as agents run.
       </div>
     );
   }
 
   return (
-    <div className="max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <div className="space-y-1.5">
+    <div className="max-h-80 overflow-y-auto rounded-xl border border-hairline bg-canvas p-3">
+      <ul className="space-y-1">
         {events.map((evt, i) => (
-          <div
+          <li
             key={i}
-            className={`border-l-2 pl-3 text-xs ${eventColors[evt.event] ?? "text-gray-500"}`}
+            className="animate-rise flex items-start gap-2.5 rounded-lg px-2 py-1.5 text-xs"
           >
-            <span className="font-medium">{evt.agent ?? "system"}</span>{" "}
-            {eventLabels[evt.event] && (
-              <span className="opacity-70">— {eventLabels[evt.event]}</span>
-            )}
-            {evt.message && <p className="mt-0.5 opacity-80">{evt.message}</p>}
-          </div>
+            <span
+              className={`mt-1 h-2 w-2 shrink-0 rounded-full ${eventDot[evt.event] ?? "bg-gray-300"}`}
+              aria-hidden
+            />
+            <div className="min-w-0">
+              <span className="font-semibold text-ink">{evt.agent ?? "system"}</span>
+              {eventLabels[evt.event] && (
+                <span className="ml-1.5 text-ink-muted">{eventLabels[evt.event]}</span>
+              )}
+              {evt.message && (
+                <p className="mt-0.5 break-words text-ink-muted">{evt.message}</p>
+              )}
+            </div>
+          </li>
         ))}
         <div ref={bottomRef} />
-      </div>
+      </ul>
     </div>
   );
 }
