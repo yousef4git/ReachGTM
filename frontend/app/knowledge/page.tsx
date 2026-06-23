@@ -16,6 +16,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { KnowledgeDocument } from "@/types";
 
+const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".pptx", ".txt", ".md", ".markdown", ".csv"];
+const ACCEPTED_ATTR = ACCEPTED_EXTENSIONS.join(",");
+
 const DOC_TYPE_OPTIONS = [
   { value: "product_doc", label: "Product Documentation" },
   { value: "sales_deck", label: "Sales Deck / Pitch" },
@@ -45,18 +48,13 @@ export default function KnowledgePage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const allDocs = docs ?? knowledgeDocs;
+  const allDocs = docs && docs.length > 0 ? docs : knowledgeDocs;
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const dropped = e.dataTransfer.files[0];
-    if (
-      dropped &&
-      (dropped.name.endsWith(".pdf") ||
-        dropped.name.endsWith(".docx") ||
-        dropped.name.endsWith(".doc"))
-    ) {
+    if (dropped && ACCEPTED_EXTENSIONS.some((ext) => dropped.name.toLowerCase().endsWith(ext))) {
       setFile(dropped);
     }
   }, []);
@@ -126,7 +124,7 @@ export default function KnowledgePage() {
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf,.docx,.doc"
+            accept={ACCEPTED_ATTR}
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -158,10 +156,10 @@ export default function KnowledgePage() {
                 <Upload className="h-5 w-5" />
               </span>
               <p className="mt-3 text-[0.9375rem] font-semibold text-ink">
-                Drop a PDF or DOCX, or click to browse
+                Drop a document, or click to browse
               </p>
               <p className="mono mt-1 text-[0.6875rem] text-ink-faint">
-                .pdf · .docx · .doc
+                .pdf · .docx · .pptx · .md · .txt · .csv
               </p>
             </div>
           )}
@@ -243,7 +241,7 @@ export default function KnowledgePage() {
               No documents yet
             </p>
             <p className="mx-auto mt-1.5 max-w-sm text-[0.875rem] text-ink-muted">
-              Upload a PDF or DOCX to ground your agents in company knowledge.
+              Upload a deck, doc, or PDF to ground your agents in company knowledge.
             </p>
           </div>
         )}

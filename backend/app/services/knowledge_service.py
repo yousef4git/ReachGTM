@@ -4,6 +4,7 @@ import asyncpg
 from openai import AsyncOpenAI
 from pypdf import PdfReader
 from docx import Document as DocxDocument
+from pptx import Presentation
 from backend.app.config import settings
 from backend.app.services.storage_service import upload_object
 
@@ -17,26 +18,69 @@ def _storage_key(company_id: str, doc_id: uuid.UUID, filename: str) -> str:
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
 
+def _extract_pptx_text(content: bytes) -> str:
+    """Pull text from every slide: titles, body text frames, table cells, and
+    speaker notes. One paragraph per logical block so chunking stays coherent."""
+    prs = Presentation(io.BytesIO(content))
+    blocks: list[str] = []
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                text = "\n".join(
+                    p.text for p in shape.text_frame.paragraphs if p.text.strip()
+                )
+                if text.strip():
+                    blocks.append(text)
+            if shape.has_table:
+                for row in shape.table.rows:
+                    cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                    if cells:
+                        blocks.append(" | ".join(cells))
+        notes = slide.notes_slide.notes_text_frame.text if slide.has_notes_slide else ""
+        if notes.strip():
+            blocks.append(notes)
+    return "\n\n".join(blocks)
+
+
 def _extract_text(content: bytes, filename: str) -> str:
-    if filename.lower().endswith(".pdf"):
+    name = filename.lower()
+    if name.endswith(".pdf"):
         reader = PdfReader(io.BytesIO(content))
         return "\n\n".join(page.extract_text() or "" for page in reader.pages)
-    elif filename.lower().endswith((".docx", ".doc")):
+    elif name.endswith((".docx", ".doc")):
         doc = DocxDocument(io.BytesIO(content))
         return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    elif name.endswith(".pptx"):
+        return _extract_pptx_text(content)
+    elif name.endswith((".txt", ".md", ".markdown", ".csv")):
+        return content.decode("utf-8", errors="ignore")
     raise ValueError(f"Unsupported file type: {filename}")
 
 def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    """Pack paragraphs into word-bounded chunks with a sliding overlap.
+
+    Paragraphs longer than `chunk_size` are pre-split into windows so no single
+    chunk balloons past the target — oversized chunks dilute embedding relevance
+    and hurt retrieval precision.
+    """
+    raw_paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    paragraphs: list[str] = []
+    for para in raw_paragraphs:
+        words = para.split()
+        if len(words) <= chunk_size:
+            paragraphs.append(para)
+        else:
+            for i in range(0, len(words), chunk_size):
+                paragraphs.append(" ".join(words[i : i + chunk_size]))
+
     chunks: list[str] = []
     current_words: list[str] = []
 
     for para in paragraphs:
         words = para.split()
-        if len(current_words) + len(words) > chunk_size:
-            if current_words:
-                chunks.append(" ".join(current_words))
-                current_words = current_words[-overlap:]
+        if current_words and len(current_words) + len(words) > chunk_size:
+            chunks.append(" ".join(current_words))
+            current_words = current_words[-overlap:] if overlap else []
         current_words.extend(words)
 
     if current_words:
