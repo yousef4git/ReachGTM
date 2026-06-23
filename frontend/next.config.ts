@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // standalone server the Dockerfile builds.
   output: "standalone",
   images: { unoptimized: true },
+  // Hide the on-screen Next.js dev indicator badge. Compile/runtime errors are
+  // still reported in the terminal and overlay.
+  devIndicators: false,
 };
 
 export default nextConfig;
