@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, BookOpen, Sparkles } from "lucide-react";
+import { LayoutDashboard, FileText, BookOpen, Sparkles, Users } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -20,6 +20,7 @@ export function Navbar() {
           <NavLink href="/strategy/new" label="New Strategy" icon={<Sparkles className="h-4 w-4" />} pathname={pathname} />
           <NavLink href="/content" label="Content" icon={<FileText className="h-4 w-4" />} pathname={pathname} />
           <NavLink href="/knowledge" label="Knowledge" icon={<BookOpen className="h-4 w-4" />} pathname={pathname} />
+          <NavLink href="/team" label="Team" icon={<Users className="h-4 w-4" />} pathname={pathname} />
         </div>
       </div>
     </nav>

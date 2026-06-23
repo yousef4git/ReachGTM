@@ -41,3 +41,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy out/ --project-name=reachgtm
           workingDirectory: frontend
+
+  # Post-deploy zero-downtime verification against the deployed URLs.
+  smoke:
+    needs: deploy
+    uses: ./.github/workflows/smoke.yml
+    secrets: inherit

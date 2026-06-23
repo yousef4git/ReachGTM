@@ -10,3 +10,10 @@
 testpaths = ["backend/tests", "agents/tests"]
 pythonpath = ["."]
 addopts = "--import-mode=importlib"
+# Registered markers (avoids PytestUnknownMarkWarning). The production
+# smoke suite under `smoke/` is marked `@pytest.mark.smoke`; it is NOT in
+# `testpaths`, so a bare `pytest` never collects it — run it explicitly with
+# `pytest smoke/ -m smoke`.
+markers = [
+    "smoke: production smoke tests run against deployed URLs (see smoke/).",
+]
