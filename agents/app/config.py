@@ -21,9 +21,6 @@ class Settings(BaseSettings):
 
     fetch_mcp_enabled: bool = True
 
-    attio_api_key: str = ""
-    attio_mcp_url: str = ""
-
     salesforce_api_key: str = ""
     salesforce_mcp_url: str = ""
 

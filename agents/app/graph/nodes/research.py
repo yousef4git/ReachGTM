@@ -23,23 +23,59 @@ def _get_user_goal(state: GTMState) -> str:
     return str(state.metadata.get("goal", "Create a GTM research report"))
 
 
-async def _run_perplexity_search(query: str) -> list[str]:
-    """Call the Perplexity MCP tool if available and return source-like text."""
+_RESEARCH_SYSTEM_PROMPT = (
+    "You are a senior B2B go-to-market research analyst. Given a user's GTM goal "
+    "and any known company context, produce a rigorous, realistic market research "
+    "report: company profile, market sizing (TAM/SAM/SOM with reasoning), 3-5 real "
+    "named competitors with positioning/strengths/weaknesses, 2-3 customer segments, "
+    "a concrete ICP, and notable market signals. Be specific and concrete — use real "
+    "company and category names where you can. Never invent precise statistics you "
+    "cannot justify; when a number is an estimate, say so in the relevant field."
+)
+
+
+async def _generate_report_llm(state: GTMState, goal: str) -> ResearchReport | None:
+    """Generate a real, structured ResearchReport with gpt-4o-mini.
+
+    Returns None when no OpenAI key is configured or the call fails, so the caller
+    can fall back to the deterministic stub. Uses LangChain structured output so the
+    model is constrained to the ResearchReport schema.
+    """
+    from agents.app.config import settings
+
+    if not settings.openai_api_key:
+        return None
+
     try:
-        from agents.app.tools.mcp_client import get_mcp_tools
-        tools = await get_mcp_tools()
-        if not tools:
-            return []
+        from langchain_openai import ChatOpenAI
 
-        tool = tools[0]
-        result = await tool.ainvoke({"query": query})
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0.4,
+            api_key=settings.openai_api_key,
+        ).with_structured_output(ResearchReport)
 
-        if isinstance(result, str):
-            return [result]
+        context_bits = []
+        for field in ("company_name", "website", "industry", "stage", "description"):
+            value = state.metadata.get(field)
+            if value:
+                context_bits.append(f"{field}: {value}")
+        context = "\n".join(context_bits) or "(no extra company context provided)"
 
-        return [str(result)]
-    except Exception as exc:
-        return [f"perplexity_error:{type(exc).__name__}"]
+        human = (
+            f"GTM goal:\n{goal}\n\nKnown company context:\n{context}\n\n"
+            "Produce the research report now."
+        )
+
+        report = await llm.ainvoke(
+            [
+                {"role": "system", "content": _RESEARCH_SYSTEM_PROMPT},
+                {"role": "user", "content": human},
+            ]
+        )
+        return report
+    except Exception:
+        return None
 
 
 async def _invoke_mcp_tool(server: str, name_contains: str, args: dict) -> list[str]:
@@ -91,14 +127,14 @@ def _build_fallback_report(state: GTMState, goal: str, sources: list[str]) -> Re
             tam="Unknown",
             sam="Unknown",
             som="Unknown",
-            source="Perplexity MCP fallback; replace with live source when available",
+            source="Heuristic fallback (no OpenAI key set); replace with live data",
             year=2026,
         ),
         competitors=[
             Competitor(
                 name="Competitor research pending",
                 website=None,
-                positioning="Needs live market research from Perplexity MCP.",
+                positioning="Needs live market research (set OPENAI_API_KEY).",
                 strengths=["Established market presence"],
                 weaknesses=["Not enough verified data yet"],
                 pricing_model=None,
@@ -135,16 +171,16 @@ def _build_fallback_report(state: GTMState, goal: str, sources: list[str]) -> Re
 
 
 async def research_node(state: GTMState) -> GTMState:
-    """Research node: uses Perplexity MCP and writes a ResearchReport into state."""
+    """Research node: generate a ResearchReport with an OpenAI agent.
+
+    Primary path is an LLM (gpt-4o-mini) constrained to the ResearchReport schema.
+    When no OpenAI key is set (or the call fails) it degrades to a deterministic
+    stub so the pipeline never breaks. Databar/Fetch MCP enrichment is best-effort
+    and no-ops when unconfigured.
+    """
     goal = _get_user_goal(state)
-    query = f"Market research, competitors, ICP, and GTM trends for: {goal}"
 
     sources: list[str] = []
-
-    try:
-        sources = await _run_perplexity_search(query)
-    except Exception as exc:
-        sources = [f"perplexity_error:{type(exc).__name__}"]
 
     # Best-effort enrichment via Databar + Fetch MCP. Both no-op (return []) when
     # not configured, so this never breaks the offline / stub path.
@@ -156,13 +192,12 @@ async def research_node(state: GTMState) -> GTMState:
     if website:
         sources += await _run_fetch_url(str(website))
 
-    report = _build_fallback_report(state, goal, sources)
-
-    # Best-effort: enrich the ICP from Attio CRM (no-op when not configured).
-    from agents.app.tools.attio_enrich import enrich_icp_from_attio
-    enriched_icp = await enrich_icp_from_attio(report.icp)
-    if enriched_icp is not report.icp:
-        report = report.model_copy(update={"icp": enriched_icp})
+    report = await _generate_report_llm(state, goal)
+    if report is None:
+        report = _build_fallback_report(state, goal, sources)
+    elif sources:
+        # Preserve any live enrichment sources alongside the LLM-generated report.
+        report = report.model_copy(update={"sources": list(report.sources) + sources})
 
     return state.model_copy(
         update={
