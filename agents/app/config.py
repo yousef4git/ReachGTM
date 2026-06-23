@@ -16,6 +16,10 @@ class Settings(BaseSettings):
 
     perplexity_api_key: str = ""
 
+    # Serper.dev — Google Search API used to ground the research agent in live web
+    # results. Empty = the research agent runs on model knowledge only.
+    serper_api_key: str = ""
+
     databar_api_key: str = ""
     databar_mcp_url: str = ""
 

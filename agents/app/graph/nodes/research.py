@@ -62,9 +62,24 @@ async def _generate_report_llm(state: GTMState, goal: str) -> ResearchReport | N
                 context_bits.append(f"{field}: {value}")
         context = "\n".join(context_bits) or "(no extra company context provided)"
 
+        # Ground the agent in live web results (no-op when SERPER_API_KEY unset).
+        from agents.app.tools.serper_search import web_search, format_results
+
+        search_results = await web_search(
+            f"market research, competitors, ICP, and GTM trends for: {goal}"
+        )
+        if search_results:
+            web_block = (
+                "\n\nLive web search results (use these to ground your report; "
+                "cite the relevant links in `sources`):\n"
+                f"{format_results(search_results)}"
+            )
+        else:
+            web_block = ""
+
         human = (
-            f"GTM goal:\n{goal}\n\nKnown company context:\n{context}\n\n"
-            "Produce the research report now."
+            f"GTM goal:\n{goal}\n\nKnown company context:\n{context}"
+            f"{web_block}\n\nProduce the research report now."
         )
 
         report = await llm.ainvoke(
